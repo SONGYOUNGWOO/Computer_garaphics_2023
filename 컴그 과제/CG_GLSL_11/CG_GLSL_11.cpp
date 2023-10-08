@@ -341,7 +341,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	
 	switch (key) {
 	//선
-	case 'l': case 'ㅣ':
+	case 'l': case 'L':
 		for (int i = 0; i < 4; ++i) {
 			rect[i].pointnum = 2;
 			InitBuffer(rect[i]);

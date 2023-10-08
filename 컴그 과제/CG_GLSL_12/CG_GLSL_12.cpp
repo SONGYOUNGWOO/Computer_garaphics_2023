@@ -18,8 +18,8 @@ typedef struct allshape {
 	int indexnum;
 	GLuint vao;
 	GLuint vbo[2];
-	GLuint ebo;
-
+	GLuint ebo;	
+	bool canuse;				// 도형이 사용가능 여부 (지워졌나)
 	std::vector<float> color;
 
 	//float chy;
@@ -35,7 +35,9 @@ shape rect[15];
 int choice(0);		//그릴 도형 모양
 bool start = false; // 타이머 실행 여부
 int n = 0;			// 출력할 도형 개수
-
+GLuint vao, vbo[2];
+int target{ 0 };
+bool left_button = false;
 
 char* filetobuf(const char* file)
 {
@@ -105,7 +107,6 @@ void make_fragmentShaders()
 	}
 }
 //--- 버퍼 생성하고 데이터 받아오기
-GLuint vao, vbo[2];
 
 void make_shaderProgram()
 {
@@ -129,42 +130,46 @@ void make_shaderProgram()
 
 }
 
+//--------------------InitBuffer---------------------------------------
 void InitBuffer(shape& s) {
 	//버퍼 생성
 	std::vector<float> s_vertex;
 	std::vector<float> l_vertex;
 	std::vector<float> vertex;
-
 	std::vector<float> color;
-
-
 	std::vector<unsigned int> index;
 
 
-
 	float s_rad = 360.0 / s.pointnum;
-	float l_rad = 360.0 / (s.pointnum + 1);
+	//float l_rad = 360.0 / (s.pointnum + 1);
+
 	for(int i = 0; i < s.pointnum + 1; ++i)
 	{
-		s_vertex.push_back(s.x + cos(glm::radians( i * s_rad)) *  s.size);	//x
-		s_vertex.push_back(s.y + sin(glm::radians( i * s_rad)) * s.size);	//y
-		s_vertex.push_back(0.0);	//z
-
-		if (s.pointnum < 5) {
-			l_vertex.push_back(s.x + cos(glm::radians(i * l_rad)) * s.size);	//x
-			l_vertex.push_back(s.y + sin(glm::radians(i * l_rad)) * s.size);	//y
-			l_vertex.push_back(0.0);	//z
+		if (s.pointnum == 1) {
+			vertex.push_back(0.0f);		//x - cos
+			vertex.push_back(0.0f);		//y - sin
+			vertex.push_back(0.0f);		//z
 		}
 		else {
-			l_vertex.push_back(s.x);	//x
-			l_vertex.push_back(s.y);	//y
-			l_vertex.push_back(0.0);	//z
+			vertex.push_back(cos(glm::radians(i * s_rad)) * s.size);		//x - cos
+			vertex.push_back(sin(glm::radians(i * s_rad)) * s.size);		//y - sin
+			vertex.push_back(0.0f);											//z
 		}
-		vertex.push_back((1 - s.time) * s_vertex.at(i * 3) + s.time * l_vertex.at(i * 3));			//x
-		vertex.push_back((1 - s.time) * s_vertex.at(i * 3 + 1) + s.time * l_vertex.at(i * 3 + 1));	//y
-		vertex.push_back(0.0);	//z
+		//if (s.pointnum < 5) {
+		//	l_vertex.push_back(s.x + cos(glm::radians(i * l_rad)) * s.size);	//x
+		//	l_vertex.push_back(s.y + sin(glm::radians(i * l_rad)) * s.size);	//y
+		//	l_vertex.push_back(0.0);	//z
+		//}
+		//else {
+		//	l_vertex.push_back(s.x);	//x
+		//	l_vertex.push_back(s.y);	//y
+		//	l_vertex.push_back(0.0);	//z
+		//}
+		//vertex.push_back((1 - s.time) * s_vertex.at(i * 3) + s.time * l_vertex.at(i * 3));			//x
+		//vertex.push_back((1 - s.time) * s_vertex.at(i * 3 + 1) + s.time * l_vertex.at(i * 3 + 1));	//y
+		//vertex.push_back(0.0);	//z
 		
-		color.push_back(s.color.at(i * 3));	//r
+		color.push_back(s.color.at(i * 3));		//r
 		color.push_back(s.color.at(i * 3 + 1));	//g
 		color.push_back(s.color.at(i * 3 + 2));	//b
 
@@ -189,6 +194,11 @@ void InitBuffer(shape& s) {
 		index.push_back(0);
 		index.push_back(3);
 		index.push_back(4);		//점이 5개일떄
+	}
+	if(s.pointnum + 1 > 5) {
+		index.push_back(0);
+		index.push_back(4);
+		index.push_back(5);		//점이 8개일떄
 	}
 	s.indexnum = index.size();
 
@@ -294,27 +304,95 @@ void settriangle(int i) {
 //	InitBuffer(&rect[ct]);
 ////}
 
+bool IsCollision(const shape& rect1, const shape& rect2) {
+
+	// 두 사각형의 축 정의
+	float rect1_left = rect1.x - rect1.size;
+	float rect1_right = rect1.x + rect1.size;
+	float rect1_top = rect1.y + rect1.size;
+	float rect1_bottom = rect1.y - rect1.size;
+
+	float rect2_left = rect2.x - rect2.size;
+	float rect2_right = rect2.x + rect2.size;
+	float rect2_top = rect2.y + rect2.size;
+	float rect2_bottom = rect2.y - rect2.size;
+
+	// 충돌 감지
+	if (rect1_left < rect2_right &&
+		rect1_right > rect2_left &&
+		rect1_top > rect2_bottom &&
+		rect1_bottom < rect2_top) {
+		return true; // 충돌 발생
+	}
+
+	return false; // 충돌 없음
+
+}
+//----------------Mouse----------------------------------
 void Mouse(int button, int state, int x, int y) {
+
 	float mx = (x - 800 / 2.0f) / (800 / 2.0f);
 	float my = (800 / 2.0f - y) / (800 / 2.0f);
 
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		int target{ 0 };
-		mx > 0.0f ? target++ : 0;
-		my < 0.0f ? target += 2 : 0;
-		//InitBuffer(rect[target]);
+
+		for (int i = 0; i < n; ++i) {
+			if (rect[i].x - rect[i].size < mx and  mx < rect[i].x + rect[i].size and	 //충돌판정
+				rect[i].y - rect[i].size < my and my < rect[i].y + rect[i].size) {
+				left_button = true;
+				target = i;
+			}
+		}
+		std::cout << "target은 : " << target << "\n";
+		//
 		std::cout << "마우스 클릭 타이머 시작된 도형 번호[:" << target  <<"]" << '\n';
-		glutTimerFunc(10, TimerA, target);
-		
-		
-		//changet(mx, my); // 추가
+		//InitBuffer(rect[target]);
+		//glutTimerFunc(10, TimerA, target);
+	
 	}
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+		for (int i = 0; i < 15; ++i) {
+			if (i == target || rect[i].pointnum == 0)
+				continue;
+			if (IsCollision(rect[i], rect[target])) {
+				rect[target].pointnum += rect[i].pointnum;
+				if (rect[target].pointnum > 6) {
+					rect[target].pointnum = 1;
+				}
+				rect[i].pointnum = 0;//점에 개수 변경
+
+
+				InitBuffer(rect[i]);
+				InitBuffer(rect[target]);
+				break;
+			}
+		}
+
+		left_button = false;
+	}
+
+	glutPostRedisplay(); // 화면 다시 그리기 요청
+}
+
+//----------Motion----------------------------------------
+void Motion(int x, int y) {
+	float mx = (x - 800 / 2.0f) / (800 / 2.0f);
+	float my = (800 / 2.0f - y) / (800 / 2.0f);
+
+	if (left_button == true) {
+		
+		rect[target].x = mx;
+		rect[target].y = my;
+		std::cout << "rect[:" << target << "].x =" << rect[target].x << '\n';
+		std::cout << "rect[:" << target << "].y =" << rect[target].y << '\n' << '\n';
+
+	}
+
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
 
 
-
-//타이머 함수
+//----------TimerA------------------타이머 함수
 void TimerA(int value) {
 	if (rect[value].time > 1.0) {
 		/*rect[value].pointnum++;
@@ -335,7 +413,7 @@ void TimerA(int value) {
 }
 
 
-
+//--------Keyboard----------------------------------------
 GLvoid Keyboard(unsigned char key, int x, int y) {
 
 	
@@ -383,7 +461,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
 
-// -- - 그리기 콜백 함수
+// ---- 그리기 콜백 함수
 GLvoid drawScene()
 {
 	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
@@ -395,6 +473,7 @@ GLvoid drawScene()
 		glBindVertexArray(rect[i].vao);								//--- 사용할 VAO 불러오기
 		{
 			glm::mat4 transformMatrix(1.0f);
+			transformMatrix = glm::translate(transformMatrix, glm::vec3(rect[i].x, rect[i].y, 0.0f));
 			unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 
@@ -402,11 +481,11 @@ GLvoid drawScene()
 
 		if (choice == 0) {
 			//glDrawArrays(GL_TRIANGLE_STRIP, 0, rect[i].pointnum + 1);
-			if (rect[i].pointnum == 0) {
+			if (rect[i].pointnum == 1) {
 				glPointSize(5);
 				glDrawElements(GL_POINTS, rect[i].indexnum, GL_UNSIGNED_INT, 0);
 			}
-			else if (rect[i].pointnum == 1 || (rect[i].pointnum == 2 and rect[i].time == 0.0f)) {
+			else if (rect[i].pointnum == 2 ) {
 				glLineWidth(5);
 				glDrawElements(GL_LINES, rect[i].indexnum , GL_UNSIGNED_INT, 0);
 
@@ -442,15 +521,15 @@ GLvoid drawScene()
 
 
 void reset() {
-	n = 4;
-	for (int i = 0; i < 4; i++) {
-		rect[i].x = i % 2 == 1 ? 0.5 : -0.5;
-		rect[i].y = i < 2 ? 0.5 : -0.5;
+	n = 15;
+	for (int i = 0; i < 15; i++) {
+		rect[i].x = randomnum(-1.0, 1.0);
+		rect[i].y = randomnum(-1.0, 1.0);
 		rect[i].time = 0.0f;
-		rect[i].pointnum = i + 2;
-		rect[i].size = 0.3f;
+		rect[i].pointnum = i / 3 + 1;
+		rect[i].size = 0.2f;
 
-		for (int j = 0; j < 6; j++) {
+		for (int j = 0; j < 7; j++) {
 			rect[i].color.push_back(randomnum(0.0, 1.0));		//r
 			rect[i].color.push_back(randomnum(0.0, 1.0));		//g
 			rect[i].color.push_back(randomnum(0.0, 1.0));		//b
@@ -488,6 +567,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설�
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Keyboard); // 키보드 입력
 	glutMouseFunc(Mouse); // 마우스 입력
+	glutMotionFunc(Motion); // 마우스 입력
 
 	glutMainLoop();
 }
