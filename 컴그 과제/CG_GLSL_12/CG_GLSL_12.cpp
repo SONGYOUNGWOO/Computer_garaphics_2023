@@ -21,8 +21,9 @@ typedef struct allshape {
 	GLuint ebo;	
 	bool canuse;				// 도형이 사용가능 여부 (지워졌나)
 	std::vector<float> color;
+	GLint motions ,down;
 
-	//float chy;
+	float chy;
 	//glm::vec3 mat_size;
 	//GLfloat allvertex[4][3];	// 위치
 	//GLfloat allcolor[4][3];		// 색상
@@ -372,11 +373,12 @@ void Mouse(int button, int state, int x, int y) {
 				rect[i].pointnum = 0;//점에 개수 변경
 				InitBuffer(rect[i]);
 				InitBuffer(rect[target]);
+
 				glutTimerFunc(10, TimerB, target);
 				break;
 			}
 		}
-
+		target = -1; // target 초기화
 		left_button = false;
 	}
 
@@ -424,22 +426,50 @@ void TimerA(int value) {
 //----------TimerB------------------타이머 함수
 void TimerB(int value) {
 
-	rect[value].x += rect[value].dx * 0.01f;
-	rect[value].y += rect[value].dy * 0.01f;
-	//std::cout << "timer[" << i << "]: (" << rect[i].dx << ", " << rect[i].x << ")" << std::endl;
+	if (rect[value].motions == 1) {
+		if (value != target) {
+			rect[value].x += rect[value].dx * 0.01f;
+			rect[value].y += rect[value].dy * 0.01f;
+			//std::cout << "timer[" << value << "]: (" << rect[value].dx << ", " << rect[value].x << ")" << std::endl;
 
-	if ((rect[value].dx < 0 and rect[value].x - rect[value].size <= -1) || (rect[value].dx > 0 and rect[value].x + rect[value].size >= 1)) {
-		rect[value].dx *= -1;
-		rect[value].x += rect[value].dx * 0.01f;
+			if ((rect[value].dx < 0 and rect[value].x - rect[value].size <= -1) || (rect[value].dx > 0 and rect[value].x + rect[value].size >= 1)) {
+				rect[value].dx *= -1;
+				rect[value].x += rect[value].dx * 0.01f;
+			}
+			if ((rect[value].dy < 0 and rect[value].y - rect[value].size <= -1) || (rect[value].dy > 0 and rect[value].y + rect[value].size >= 1)) {
+				rect[value].dy *= -1;
+				rect[value].y += rect[value].dy * 0.01f;
+			}
+			//std::cout << rect[i].x << '\n';
+			InitBuffer(rect[value]);
+		}
 	}
-	if ((rect[value].dy < 0 and rect[value].y - rect[value].size <= -1) || (rect[value].dy > 0 and rect[value].y + rect[value].size >= 1)) {
-		rect[value].dy *= -1;
-		rect[value].y += rect[value].dy * 0.01f;
-	}
-	//std::cout << rect[i].x << '\n';
-	InitBuffer(rect[value]);
-	
+	else {
+		if (rect[value].down == 1) {			// 수직 이동
+			rect[value].y += rect[value].dy * 0.01f; //방향 전환
+			rect[value].chy += 0.01f;
 
+			if (rect[value].chy > rect[value].size * 2) {
+
+				rect[value].down = 0;
+			}
+
+			else if (rect[value].chy > rect[value].size * 2 || (rect[value].dy < 0 && rect[value].y - rect[value].size <= -1) || (rect[value].dy > 0 && rect[value].y + rect[value].size >= 1)) {
+				rect[value].dy *= -1;
+			}
+		}
+		else { // 수평 이동
+			rect[value].x += rect[value].dx * 0.01f;
+
+			if ((rect[value].dx < 0 && rect[value].x - rect[value].size <= -1) || (rect[value].dx > 0 && rect[value].x + rect[value].size >= 1)) {
+				rect[value].dx *= -1;
+				rect[value].chy = 0.0f;
+				rect[value].down = 1;
+			}
+		}
+
+
+	}
 	glutPostRedisplay();
 	glutTimerFunc(10, TimerB, value);
 }
@@ -555,10 +585,15 @@ GLvoid drawScene()
 void reset() {
 	n = 15;
 	for (int i = 0; i < 15; i++) {
+		
 		rect[i].x = randomnum(-1.0, 1.0);
 		rect[i].y = randomnum(-1.0, 1.0);
 		rect[i].dx =  randomnum(0.0, 1.0) < 0.5f ? 1 : -1;
 		rect[i].dy =  randomnum(0.0, 1.0) < 0.5f ? 1 : -1;
+
+		rect[i].motions = randomnum(0.0, 1.0) < 0.5f ? 1 : 2;
+		rect[i].chy = 1.0f; // 변화량 기록
+		rect[i].down = 0;   // y가 변하는가
 
 		rect[i].time = 0.0f;
 		rect[i].pointnum = i / 3 + 1;
