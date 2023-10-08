@@ -31,7 +31,7 @@ typedef struct allshape {
 }shape;
 
 //--- 전역변수 ----
-shape rect[4];
+shape rect[15];
 int choice(0);		//그릴 도형 모양
 bool start = false; // 타이머 실행 여부
 int n = 0;			// 출력할 도형 개수
@@ -341,7 +341,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	
 	switch (key) {
 	//선
-	case 'l': case 'ㅣ':
+	case 'l': case 'L':
 		for (int i = 0; i < 4; ++i) {
 			rect[i].pointnum = 2;
 			InitBuffer(rect[i]);
