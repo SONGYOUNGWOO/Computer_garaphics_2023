@@ -2,15 +2,15 @@
 // in_Position : attribute index 0
 // in_Color : attribute index 1
 
-//layout (location = 0) in vec3 in_Position;	//À§Ä¡ º¯¼ö attribute position 0
-//layout (location = 1) in vec3 in_Color;		//ÄÃ·¯ º¯¼ö attribute position 1
-//out vec3 out_Color;							//ÇÁ·¡±×¸ÕÆ® ¼¼ÀÌ´õ¿¡°Ô Àü´Ş
+//layout (location = 0) in vec3 in_Position;	//ìœ„ì¹˜ ë³€ìˆ˜ attribute position 0
+//layout (location = 1) in vec3 in_Color;		//ì»¬ëŸ¬ ë³€ìˆ˜ attribute position 1
+//out vec3 out_Color;							//í”„ë˜ê·¸ë¨¼íŠ¸ ì„¸ì´ë”ì—ê²Œ ì „ë‹¬
 
-in vec3 vPos; //--- ¸ŞÀÎ ÇÁ·Î±×·¥¿¡¼­ ÀÔ·Â ¹ŞÀ½
-in vec3 vColor; //--- ¸ŞÀÎ ÇÁ·Î±×·¥¿¡¼­ ÀÔ·Â ¹ŞÀ½
-in float vSize;  // Å©±â
-out vec3 passColor; //--- fragment shader·Î Àü´Ş
-//out float passSize;  //---  fragment shader·Î Å©±â Àü´Ş
+in vec3 vPos; //--- ë©”ì¸ í”„ë¡œê·¸ë¨ì—ì„œ ì…ë ¥ ë°›ìŒ
+in vec3 vColor; //--- ë©”ì¸ í”„ë¡œê·¸ë¨ì—ì„œ ì…ë ¥ ë°›ìŒ
+in float vSize;  // í¬ê¸°
+out vec3 passColor; //--- fragment shaderë¡œ ì „ë‹¬
+//out float passSize;  //---  fragment shaderë¡œ í¬ê¸° ì „ë‹¬
 
 uniform mat4 modelTransform;
 

@@ -1,12 +1,12 @@
 #version 330 core
-// out_Color : ¹öÅØ½º ¼¼ÀÌ´õ¿¡¼­ ÀÔ·Â¹Ş´Â »ö»ó °ª
-// FragColor : Ãâ·ÂÇÒ »ö»óÀÇ °ªÀ¸·Î ÇÁ·¹ÀÓ ¹öÆÛ·Î Àü´Ş µÊ .
-//in vec3 out_Color;	 //¹öÅØ½º ¼¼ÀÌ´õ¿¡°Ô¼­ Àü´Ş ¹ŞÀ½
-//out vec4 FragColor;	 //»ö»ó Ãâ·Â
+// out_Color : ë²„í…ìŠ¤ ì„¸ì´ë”ì—ì„œ ì…ë ¥ë°›ëŠ” ìƒ‰ìƒ ê°’
+// FragColor : ì¶œë ¥í•  ìƒ‰ìƒì˜ ê°’ìœ¼ë¡œ í”„ë ˆì„ ë²„í¼ë¡œ ì „ë‹¬ ë¨ .
+//in vec3 out_Color;	 //ë²„í…ìŠ¤ ì„¸ì´ë”ì—ê²Œì„œ ì „ë‹¬ ë°›ìŒ
+//out vec4 FragColor;	 //ìƒ‰ìƒ ì¶œë ¥
 
-in vec3 passColor; //--- vertex shader¿¡¼­ ÀÔ·Â ¹ŞÀ½
-//in float passSize; //---  vertex shader¿¡¼­ ÀÔ·Â ¹ŞÀº Å©±â
-out vec4 FragColor; //--- ÇÁ·¹ÀÓ ¹öÆÛ·Î Ãâ·Â
+in vec3 passColor; //--- vertex shaderì—ì„œ ì…ë ¥ ë°›ìŒ
+//in float passSize; //---  vertex shaderì—ì„œ ì…ë ¥ ë°›ì€ í¬ê¸°
+out vec4 FragColor; //--- í”„ë ˆì„ ë²„í¼ë¡œ ì¶œë ¥
 
 void main(void)
 {
