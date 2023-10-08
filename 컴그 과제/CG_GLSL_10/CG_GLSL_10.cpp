@@ -259,6 +259,11 @@ void Mouse(int button, int state, int x, int y) {
 	float my = (800 / 2.0f - y) / (800 / 2.0f);
 
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		float r = randomnum(0.0f, 1.0f);
+		float g = randomnum(0.0f, 1.0f);
+		float b = randomnum(0.0f, 1.0f);
+
+		glClearColor(r, g, b, 1.0f);  // Set random background color
 		if (n < 5) {
 			rect[n].x = mx;
 			rect[n].y = my;
@@ -274,6 +279,7 @@ void Mouse(int button, int state, int x, int y) {
 
 void TimerA(int value) {
 	rect[value].drawpoint++;
+
 
 	glutPostRedisplay();
 	if(rect[value].drawpoint < rect[value].pointnum)
@@ -314,8 +320,11 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 // -- - 그리기 콜백 함수
 GLvoid drawScene()
 {
-	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
+	//glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
+	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glUseProgram(shaderProgramID);						//--- 렌더링 파이프라인에 세이더 불러오기
 
 	for (int i = 0; i < n; ++i) {
@@ -382,6 +391,8 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 
 	make_shaderProgram();
 
+	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 
 	reset();
 	std::cout << " reset 초기화 완료" << '\n';
