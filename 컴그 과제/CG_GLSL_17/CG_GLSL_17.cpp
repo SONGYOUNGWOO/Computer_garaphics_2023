@@ -243,8 +243,10 @@ bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ false };//면 또는 선
 bool rotateXY{ false };// 회전
 bool left_button{ false }; //좌클릭
+bool b_origin_loop{ false };
 //-----------------------------------------------------------
-glm::vec3 translate_origin{ 0.0f }; //
+glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.8f
+glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.8f
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
 glm::vec3 rotate{ 0.0f }; // 축을 기준으로 공전 또는 자전
 glm::vec3 rotateobjglu{ 0.0f }; // 축을 기준으로 공전 또는 자전
@@ -581,34 +583,21 @@ void Motion(int x, int y) {
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
 
-//----------Timer_rotateX-------------------------------------------------------------------------------------
+//----------Timer_origin_loop-------------------------------------------------------------------------------------
 void origin_loop(int value) {
-	rotateobj.x += 1.0f;
-	rotateobjglu.x += 1.0f;
-	if (rotateobj.x > 360.0f or rotateobjglu.x > 360.0f) {
-		rotateobj.x -= 360.0f;
-		rotateobjglu .x -= 360.0f;
+	static int dz = 1; // 방향 변경 변수를 static으로 선언하여 유지
+	translate_origin_obj.z -= 0.01f * dz;
+	translate_origin_glu.z += 0.01f * dz;
+
+	if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.8f) {
+		dz *= -1; // 방향 변경
 	}
 	glutPostRedisplay();
-	if (rotateXY)
+	if (b_origin_loop)
 		glutTimerFunc(10, origin_loop, 0);
 }
 //----------Timer_rotateY-------------------------------------------------------------------------------------
 void TimerrotateY(int value) {
-	if (objglu == 1) {
-		rotateobjglu.y += 1.0f;
-	}
-	else if (objglu == 2) {
-		rotateobj.y += 1.0f;
-	}
-	else if (objglu == 3) {
-		rotateobj.y += 1.0f;
-		rotateobjglu.y += 1.0f;
-	}
-	if (rotateobj.x > 360.0f or rotateobjglu.x > 360.0f) {
-		rotateobj.x -= 360.0f;
-		rotateobjglu.x -= 360.0f;
-	}
 	glutPostRedisplay();
 	if (rotateXY)
 		glutTimerFunc(10, TimerrotateY, 0);
@@ -657,7 +646,6 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		rotateobjglu.x = 0.0f;
 		rotateobjglu.y = 0.0f;
 
-		objglu = 3; // 둘 다
 		target = 1; // 정육면체
 		targetglu = 4; // 원뿔
 
@@ -671,21 +659,18 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case'T':case't'://"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 -> 제자리로 다시 이동하는 애니메이션",
-		rotateXY = rotateXY == true ? false : true;
+		b_origin_loop = b_origin_loop == true ? false : true;
 		glutTimerFunc(10, origin_loop, 0);
 		break;
-	case'1'://"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션",
-		objglu = 1;
+	case'1'://"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션"
 		rotateXY = rotateXY == true ? false : true;
 		glutTimerFunc(10, TimerrotateY, 0);
 		break;
 	case'2'://"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
-		objglu = 2;
 		rotateXY = rotateXY == true ? false : true;
 		glutTimerFunc(10, TimerrotateY, 0);
 		break;
 	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
-		objglu = 3;
 		rotateXY = rotateXY == true ? false : true;
 		glutTimerFunc(10, TimerrotateY, 0);
 		break;
@@ -765,9 +750,9 @@ GLvoid drawScene()
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 
-		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, -0.8f));
+		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.8f
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.y), glm::vec3(0.0f, 1.0f, 0.0f));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.x), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -794,14 +779,14 @@ GLvoid drawScene()
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 
-		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, 0.8f));
+		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.y), glm::vec3(0.0f, 1.0f, 0.0f));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.x), glm::vec3(1.0f, 0.0f, 0.0f));
 
-		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
+		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 
@@ -870,6 +855,9 @@ void reset() {
 	cube.dy = 0.0f;
 	square_horn.dx = 0.0f;
 	square_horn.dy = 0.0f;
+
+	translate_origin_glu = {0.0f,0.0f,-0.8f};
+	translate_origin_obj = {0.0f,0.0f,0.8f};
 	InitBuffer_cube(cube);
 	InitBuffer_square_horn(square_horn);
 
