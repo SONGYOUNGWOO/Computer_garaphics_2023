@@ -18,9 +18,11 @@ const std::string Guide[]{
 	"각 도형의 제자리에서 신축 : 확대 , 축소",
 	"각 도형의 원점에 대하여 신축 : 확대 , 축소 원점에 대하여 신축하면 위치도 같이 이동된다",
 	"전체 도형의 이동 : 키보드 명령에 따라 y 축을 제외한 x 축과 z 축 , 두 도형을 위 아래로 이동",
+	"h/H: 은면제거 적용/해제",
+	"w/W: 와이어 객체/솔리드 객체",
 	"---애니메이션 구현---",
 	"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
-	"키보드 t: 현재 자리에서 두 도형이 원점으로 이동  제자리로 다시 이동하는 애니메이션",
+	"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 ->  제자리로 다시 이동하는 애니메이션",
 	"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션",
 	"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
 	"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
@@ -241,11 +243,14 @@ bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ false };//면 또는 선
 bool rotateXY{ false };// 회전
 bool left_button{ false }; //좌클릭
-int objglu{ 3 }; // 1 클릭시 glu만 선택 자전
+//-----------------------------------------------------------
+glm::vec3 translate_origin{ 0.0f }; //
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
 glm::vec3 rotate{ 0.0f }; // 축을 기준으로 공전 또는 자전
 glm::vec3 rotateobjglu{ 0.0f }; // 축을 기준으로 공전 또는 자전
 glm::vec3 rotateobj{ 0.0f }; // 축을 기준으로 공전 또는 자전
+
+//int objglu{ 3 }; // 1 클릭시 glu만 선택 자전
 //-------------------------------------------------------------------------------------------------------
 
 char* filetobuf(const char* file)
@@ -575,8 +580,9 @@ void Motion(int x, int y) {
 
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
+
 //----------Timer_rotateX-------------------------------------------------------------------------------------
-void TimerrotateX(int value) {
+void origin_loop(int value) {
 	rotateobj.x += 1.0f;
 	rotateobjglu.x += 1.0f;
 	if (rotateobj.x > 360.0f or rotateobjglu.x > 360.0f) {
@@ -585,7 +591,7 @@ void TimerrotateX(int value) {
 	}
 	glutPostRedisplay();
 	if (rotateXY)
-		glutTimerFunc(10, TimerrotateX, 0);
+		glutTimerFunc(10, origin_loop, 0);
 }
 //----------Timer_rotateY-------------------------------------------------------------------------------------
 void TimerrotateY(int value) {
@@ -620,52 +626,28 @@ void Timer_rotate(int value) {
 }
 
 //--------keyboard----------------------------------------
+//"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
+//"키보드 t: 현재 자리에서 두 도형이 원점으로 이동  제자리로 다시 이동하는 애니메이션",
+//"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션",
+//"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
+//"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	std::vector<float> vertex;
 	switch (key)
 	{
-
-	//1 을 누르면 좌측의 객체만(glu) , 2 를 누르면 우측의 객체만 , 3 을 누르면 모두 자전한다
-	case'1':
-		objglu = 1;
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateY, 0);
-		break;
-	case'2':
-		objglu = 2;
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateY, 0);
-		break;
-	case'3':
-		objglu = 3;
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateY, 0);
-		break;
-	case'C':case'c':
-		target = target == 0 ? 1 : 0;
-		targetglu = targetglu == 3 ? 4 : 3;
-		break;
-
-	case'R':case'r': // y축 기준으로 전체 자전
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, Timer_rotate, 0);
-		break;
 	case'H':case'h'://h: 은면제거 적용/해제
 		DEPTH_T = DEPTH_T == true ? false : true;
 		break;
-		
+
 	case'W':case'w'://w/W: 와이어 객체/솔리드 객체
 		t_or_l = t_or_l == true ? false : true;
 		break;
-	case'X':case'x'://x / X: x축을 기준으로 양 / 음 방향으로 회전 애니메이션(자전)
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateX, 0);
+
+	case'Q':case'q':
+		exit(0);
 		break;
-	case'Y':case'y'://y / Y : y축을 기준으로 양 / 음 방향으로 회전 애니메이션(자전)
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateY, 0);
-		break;
-	case'S':case's'://s : 초기 위치로 리셋(자전 애니메이션도 멈추기
+
+	case'P':case'p'://p : 초기 위치로 리셋(자전 애니메이션도 멈추기
 		rotateXY = false;
 		rotate.x = 0.0f;
 		rotate.y = 0.0f;
@@ -682,9 +664,32 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		InitBuffer_cube(cube);
 		InitBuffer_square_horn(square_horn);
 		break;
-	case'Q':case'q':
-		exit(0);
+
+	case'R':case'r': //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
+		//rotateXY = rotateXY == true ? false : true;
+		//glutTimerFunc(10, Timer_rotate, 0);
 		break;
+
+	case'T':case't'://"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 -> 제자리로 다시 이동하는 애니메이션",
+		rotateXY = rotateXY == true ? false : true;
+		glutTimerFunc(10, origin_loop, 0);
+		break;
+	case'1'://"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션",
+		objglu = 1;
+		rotateXY = rotateXY == true ? false : true;
+		glutTimerFunc(10, TimerrotateY, 0);
+		break;
+	case'2'://"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
+		objglu = 2;
+		rotateXY = rotateXY == true ? false : true;
+		glutTimerFunc(10, TimerrotateY, 0);
+		break;
+	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
+		objglu = 3;
+		rotateXY = rotateXY == true ? false : true;
+		glutTimerFunc(10, TimerrotateY, 0);
+		break;
+
 	}
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
