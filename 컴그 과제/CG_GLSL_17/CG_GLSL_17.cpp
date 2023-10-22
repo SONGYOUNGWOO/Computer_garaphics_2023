@@ -74,7 +74,7 @@ public:
 };
 class shapecube {
 private:
-	std::string name;
+	 std::string name;
 public:
 	//------------------------------
 	glm::vec3 p[8]; //사각형의 각 점의 좌표
@@ -89,23 +89,23 @@ public:
 	//생성자
 	shapecube() {
 		points = new int;
-		this->name = "None";
-		this->vao = 0;
-		this->vbo[0] = 0;
-		this->vbo[1] = 0;
-		this->ebo = 0;
-		this->color.clear();
-		this->dx = 0.0f;
-		this->dy = 0.0f;
-		this->indexnum = 0;
+		name = "None";
+		vao = 0;
+		vbo[0] = 0;
+		vbo[1] = 0;
+		ebo = 0;
+		color.clear();
+		dx = 0.0f;
+		dy = 0.0f;
+		indexnum = 0;
 		for (int i = 0; i < 8; ++i) {
-			this->p[i].x = (((i % 4) % 3 == 0 ? -1.0f : 1.0f) + this->dx);	
-			this->p[i].y = ((i / 4 == 0 ? 1.0f : -1.0f) + this->dy);	
-			this->p[i].z = ((i % 4) < 2 ? 1.0f : -1.0f);	
+			p[i].x = (((i % 4) % 3 == 0 ? -1.0f : 1.0f) + dx);	
+			p[i].y = ((i / 4 == 0 ? 1.0f : -1.0f) + dy);	
+			p[i].z = ((i % 4) < 2 ? 1.0f : -1.0f);	
 
-			this->color.push_back(randomnum(0.0f, 1.0f));
-			this->color.push_back(randomnum(0.0f, 1.0f));
-			this->color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
 		}
 	}
 
@@ -116,28 +116,28 @@ public:
 	//멤버 함수(method)
 	void reset() {
 		for (int i = 0; i < 8; ++i) {
-			this->p[i].x = (((i % 4) % 3 == 0 ? -1.0f : 1.0f));
-			this->p[i].y = ((i / 4 == 0 ? 1.0f : -1.0f));
-			this->p[i].z = ((i % 4) < 2 ? 1.0f : -1.0f);
+			p[i].x = (((i % 4) % 3 == 0 ? -1.0f : 1.0f));
+			p[i].y = ((i / 4 == 0 ? 1.0f : -1.0f));
+			p[i].z = ((i % 4) < 2 ? 1.0f : -1.0f);
 		}
 	}
-	void Setname(const std::string& name) {
-		this->name = name;
-	}
+	/*void Setname(const std::string& name) {
+		name = name;
+	}*/
 
 	std::string Getname() {
-		return this->name;
+		return name;
 	}
 
 	void Print_member() {
 		std::cout << "------------------------------------------------------------------" << '\n';
 		std::cout << "정점 위치들" << '\n';
 		for (int i = 0; i < 4; ++i) {
-			std::cout << "p[" << i << "] = (" << this->p[i].x << ", " << this->p[i].y << ", " << this->p[i].z << ")" << '\n';
+			std::cout << "p[" << i << "] = (" << p[i].x << ", " << p[i].y << ", " << p[i].z << ")" << '\n';
 		}
 		std::cout << "색상" << '\n';
 		for (int i = 0; i < 4; i++) {
-			std::cout << "color[" << i << "] = (" << this->color.at(i * 3) << ", " << this->color.at(i * 3 + 1) << ", " << this->color.at(i * 3 + 2) << ")" << '\n';
+			std::cout << "color[" << i << "] = (" << color.at(i * 3) << ", " << color.at(i * 3 + 1) << ", " << color.at(i * 3 + 2) << ")" << '\n';
 		}
 		std::cout << "------------------------------------------------------------------" << '\n';
 	}
@@ -159,30 +159,30 @@ public:
 	//생성자
 	shapep () {
 		points = new int;
-		this->name = "None";
-		this->vao = 0;
-		this->vbo[0] = 0;
-		this->vbo[1] = 0;
-		this->ebo = 0;
-		this->color.clear();
-		this->dx = 0.0f;
-		this->dy = 0.0f;
-		this->indexnum = 0;
+		name = "None";
+		vao = 0;
+		vbo[0] = 0;
+		vbo[1] = 0;
+		ebo = 0;
+		color.clear();
+		dx = 0.0f;
+		dy = 0.0f;
+		indexnum = 0;
 
 		for (int i = 0; i < 5; ++i) {
 			if (i == 0) {
-				this->p[i].x = (0.0f + this->dx);		//x - cos
-				this->p[i].y = (1 + this->dy);		//y - sin
-				this->p[i].z = (0.0f);		//z
+				p[i].x = (0.0f + dx);		//x - cos
+				p[i].y = (1 + dy);		//y - sin
+				p[i].z = (0.0f);		//z
 			}
 			else {
-				this->p[i].x = ((i / 3 == 0 ? -1.0f : 1.0f) + this->dx);	//x - cos
-				this->p[i].y = (-1.0f + this->dy);		//y - sin
-				this->p[i].z = (i % 3 == 1 ? 1.0f : -1.0f);	//z
+				p[i].x = ((i / 3 == 0 ? -1.0f : 1.0f) + dx);	//x - cos
+				p[i].y = (-1.0f + dy);		//y - sin
+				p[i].z = (i % 3 == 1 ? 1.0f : -1.0f);	//z
 			}
-			this->color.push_back(randomnum(0.0f, 1.0f));
-			this->color.push_back(randomnum(0.0f, 1.0f));
-			this->color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
 		}
 	}
 
@@ -194,39 +194,72 @@ public:
 	void reset() {
 		for (int i = 0; i < 5; ++i) {
 			if (i == 0) {
-				this->p[i].x = (0.0f);		//x - cos
-				this->p[i].y = (1);		//y - sin
-				this->p[i].z = (0.0f);		//z
+				p[i].x = (0.0f);		//x - cos
+				p[i].y = (1);		//y - sin
+				p[i].z = (0.0f);		//z
 			}
 			else {
-				this->p[i].x = ((i / 3 == 0 ? -1.0f : 1.0f));	//x - cos
-				this->p[i].y = (-1.0f);		//y - sin
-				this->p[i].z = (i % 3 == 1 ? 1.0f : -1.0f);	//z
+				p[i].x = ((i / 3 == 0 ? -1.0f : 1.0f));	//x - cos
+				p[i].y = (-1.0f);		//y - sin
+				p[i].z = (i % 3 == 1 ? 1.0f : -1.0f);	//z
 			}
 		}
 	}
-	void Setname(const std::string& name) {
-		this->name = name;
-	}
+	//void Setname(const std::string& name) {
+	//	name = name;
+	//}
 
 	std::string Getname() {
-		return this->name;
+		return name;
 	}
 
 	void Print_member() {
 		std::cout << "------------------------------------------------------------------" << '\n';
 		std::cout << "정점 위치들" << '\n';
 		for (int i = 0; i < 4; ++i) {
-			std::cout << "p[" << i << "] = (" << this->p[i].x << ", " << this->p[i].y << ", " << this->p[i].z << ")" << '\n';
+			std::cout << "p[" << i << "] = (" << p[i].x << ", " << p[i].y << ", " << p[i].z << ")" << '\n';
 		}
 		std::cout << "색상" << '\n';
 		for (int i = 0; i < 4; i++) {
-			std::cout << "color[" << i << "] = (" << this->color.at(i * 3) << ", " << this->color.at(i * 3 + 1) << ", " << this->color.at(i * 3 + 2) << ")" << '\n';
+			std::cout << "color[" << i << "] = (" << color.at(i * 3) << ", " << color.at(i * 3 + 1) << ", " << color.at(i * 3 + 2) << ")" << '\n';
 		}
 		std::cout << "------------------------------------------------------------------" << '\n';
 	}
 
 };
+class  shap_circle_spiral {
+public:
+	glm::vec3 p[1];
+	GLuint vao;
+	GLuint vbo[2];
+	std::vector<float> color;
+	std::vector<float> vertex;
+	//------------------
+	float dx, dy;
+	int drawpoint;
+	int pointnum;
+	int* points;
+	
+	//생성자
+	shap_circle_spiral() {
+		points = new int;
+		vao = 0;
+		vbo[0] = 0;
+		vbo[1] = 0;
+		color.clear();
+		drawpoint = 0;
+		pointnum = 0;
+		p->x = 0.0f;
+		p->y = 0.0f;
+		p->z = 0.0f;
+
+		color.push_back(randomnum(0.0f, 1.0f));
+		color.push_back(randomnum(0.0f, 1.0f));
+		color.push_back(randomnum(0.0f, 1.0f));
+		
+	}
+};
+
 
 //--- 전역변수 -------------------------------------------------------------------------------------------------------
 //--------------------xyz-----------------------------------------------------------
@@ -236,6 +269,7 @@ const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
 shapecube cube;
 shapep square_horn;
 linexyz xyz;//xyz축 그리기
+shap_circle_spiral s_circle_spiral; // 원 스파이럴 그리기
 int target{ 1 };  //선택한 도형 처음 도형은 정육면체
 int targetglu{ 3 };//선택한 glu 도형 처음 도형은 구
 bool DEPTH_T{ true }; // 은면제거
@@ -510,7 +544,7 @@ void InitBuffer_square_horn(shapep& s) {
 
 
 }
-//--------------------InitBuffer_line_xyz(linexyz& s)---------------------------------------
+//--------------------InitBuffer_line_xyz---------------------------------------
 void InitBuffer_line_xyz(linexyz& s) {
 	//버퍼 생성
 	std::vector<float> vertex;
@@ -550,6 +584,54 @@ void InitBuffer_line_xyz(linexyz& s) {
 	vertex.clear();
 	color.clear();
 }
+//--------------------InitBuffer_s_circle_spiral---------------------------------------
+void InitBuffer_s_circle_spiral(shap_circle_spiral& s) {
+	//버퍼 생성
+	std::vector<float> vertex;
+	std::vector<float> color;
+	float rad = 0;
+	float drawr = 0;
+	while (rad < 360.0 * 5)
+	{
+		vertex.push_back(s.p->x + cos(glm::radians(rad)) * drawr);	//x
+		vertex.push_back(s.p->y = 0.0f);	//y
+		vertex.push_back(s.p->z + sin(glm::radians(rad)) * drawr);	//z
+		
+
+		color.push_back(s.color.at(0));	//r
+		color.push_back(s.color.at(1));	//g
+		color.push_back(s.color.at(2));	//b
+		drawr += 0.002f;
+		rad += 15.0;
+	}
+	
+
+	//gpu 버퍼에 저장하기
+	{
+		glGenVertexArrays(1, &s.vao); //--- VAO 를 지정하고 할당하기
+		glBindVertexArray(s.vao);		//--- VAO를 바인드하기
+		glGenBuffers(2, s.vbo);		//--- 2개의 VBO를 지정하고 할당하기
+
+		//--- 1번째 VBO를 활성화하여 바인드하고, 버텍스 속성 (좌표값)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[0]);											//--- 변수 diamond 에서 버텍스 데이터 값을 버퍼에 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(GLfloat), vertex.data(), GL_STATIC_DRAW);	//--- triShape 배열의 사이즈: 9 * float
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 좌표값을 attribute 인덱스 0번에 명시한다: 버텍스 당 3* float
+		glEnableVertexAttribArray(0);													//--- attribute 인덱스 0번을 사용가능하게 함
+
+		//--- 2번째 VBO를 활성화 하여 바인드 하고, 버텍스 속성 (색상)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[1]);  										//--- 변수 colors에서 버텍스 색상을 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(GLfloat), color.data(), GL_STATIC_DRAW); 	//--- colors 배열의 사이즈: 9 *float
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 색상값을 attribute 인덱스 1번에 명시한다: 버텍스 당 3*float
+		glEnableVertexAttribArray(1);
+
+	}
+	s.drawpoint = 1;
+	s.pointnum = vertex.size() / 3;
+
+	vertex.clear();
+	color.clear();
+}
+
 //----------------Mouse----------------------------------
 void Mouse(int button, int state, int x, int y) {
 
@@ -663,17 +745,26 @@ void Timer_circle_spiral(int value) {
 		static int dz = 1; // 방향 변경 변수
 		translate_origin_obj.z -= 0.005f * dz;
 		translate_origin_glu.z += 0.005f * dz;
+		rotate.y += 4.0f * dz ;
 
 		if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.9f) {
 			dz *= -1; // 방향 변경
 		}
-		rotate.y += 4.0f;
+		
 		std::cout << "obj.z의 값: " << translate_origin_obj.z << "\n";
 		
 	}
 	glutPostRedisplay();
 	if (b_animation)
 		glutTimerFunc(10, Timer_circle_spiral, 0);
+}
+
+void Timer_circle_spiral_pointnum(int value) {
+	s_circle_spiral.drawpoint++;
+
+	glutPostRedisplay();
+	if (s_circle_spiral.drawpoint < s_circle_spiral.pointnum)
+		glutTimerFunc(10, Timer_circle_spiral_pointnum, 0);
 }
 //--------keyboard----------------------------------------
 //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
@@ -719,7 +810,8 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 
 	case'R':case'r': //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
 		all_animation = 5;
-		std::cout << "실행완료" << "\n";
+		glutTimerFunc(10, Timer_circle_spiral_pointnum, 0);;
+		//std::cout << "실행완료" << "\n";r
 		b_animation = b_animation == true ? false : true;
 		b_circle_spiral = b_circle_spiral == true ? false : true;
 		glutTimerFunc(10, Timer_circle_spiral, 0);
@@ -825,20 +917,6 @@ GLvoid drawScene()
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 		
-		//if (all_animation == 1 || all_animation == 4) {
-		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.9f
-		//}
-		//else if (all_animation == 2) {
-		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
-		//}
-		//else if (all_animation == 3) {
-		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
-		//}
-		//else if (all_animation == 5) { //원 스파이럴
-		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
-		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu));
-		//}
-
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
 		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.9f
@@ -869,19 +947,6 @@ GLvoid drawScene()
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 
-		//if (all_animation == 1 || all_animation == 4) {
-		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
-		//}
-		//else if (all_animation == 2) {
-		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
-		//}
-		//else if (all_animation == 3) {
-		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
-		//}
-		//else if (all_animation == 5) { //원 스파이럴
-		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
-		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu));
-		//}
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
 		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
@@ -945,6 +1010,20 @@ GLvoid drawScene()
 	//	// 데이터 출력 후 메모리를 해제
 	//}
 
+	//s_circle_spiral
+	glBindVertexArray(s_circle_spiral.vao);								//--- 사용할 VAO 불러오기
+	{
+		glm::mat4 transformMatrix(1.0f);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+		transformMatrix = glm::scale(transformMatrix, glm::vec3(4.0f, 4.0f, 4.0f));
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+		glLineWidth(2);
+		glDrawArrays(GL_LINE_STRIP, 0, s_circle_spiral.drawpoint);
+
+	}
+
 
 
 	glutSwapBuffers();									//--- 화면에 출력하기
@@ -952,8 +1031,8 @@ GLvoid drawScene()
 
 
 void reset() {
-	cube.Setname("cube");
-	square_horn.Setname("square_horn");
+	//cube.Setname("cube");
+	//square_horn.Setname("square_horn");
 	cube.dx = 0.0f;
 	cube.dy = 0.0f;
 	square_horn.dx = 0.0f;
@@ -965,6 +1044,7 @@ void reset() {
 	InitBuffer_square_horn(square_horn);
 
 	InitBuffer_line_xyz(xyz);
+	InitBuffer_s_circle_spiral(s_circle_spiral);
 }
 //--- 다시그리기 콜백 함수
 GLvoid Reshape(int w, int h)
