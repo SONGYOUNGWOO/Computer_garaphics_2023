@@ -81,7 +81,7 @@ public:
 	GLuint vao;
 	GLuint vbo[2];
 	GLuint ebo;
-	float dx, dy;
+	float dx, dy;//마우스
 	int indexnum;	
 	std::vector<float> color;
 	//------------------------------
@@ -98,7 +98,6 @@ public:
 		this->dx = 0.0f;
 		this->dy = 0.0f;
 		this->indexnum = 0;
-		
 		for (int i = 0; i < 8; ++i) {
 			this->p[i].x = (((i % 4) % 3 == 0 ? -1.0f : 1.0f) + this->dx);	
 			this->p[i].y = ((i / 4 == 0 ? 1.0f : -1.0f) + this->dy);	
@@ -241,9 +240,10 @@ int target{ 1 };  //선택한 도형 처음 도형은 정육면체
 int targetglu{ 3 };//선택한 glu 도형 처음 도형은 구
 bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ false };//면 또는 선
-bool rotateXY{ false };// 회전
+bool b_circle_spiral{ false };// 회전
 bool left_button{ false }; //좌클릭
 bool b_animation{ false };
+int all_animation{ 0 }; // 애니메인션 0:x,1:1, 2:2, 3:3, 4:t, 5:r
 //-----------------------------------------------------------
 glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
 glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
@@ -585,12 +585,14 @@ void Motion(int x, int y) {
 
 //----------Timer_origin_loop-------------------------------------------------------------------------------------
 void origin_loop(int value) {
-	static int dz = 1; // 방향 변경 변수
-	translate_origin_obj.z -= 0.01f * dz;
-	translate_origin_glu.z += 0.01f * dz;
+	if (all_animation == 4) {
+		static int dz = 1; // 방향 변경 변수
+		translate_origin_obj.z -= 0.01f * dz;
+		translate_origin_glu.z += 0.01f * dz;
 
-	if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.9f) {
-		dz *= -1; // 방향 변경
+		if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.9f) {
+			dz *= -1; // 방향 변경
+		}
 	}
 	glutPostRedisplay();
 	if (b_animation)
@@ -598,35 +600,81 @@ void origin_loop(int value) {
 }
 //----------Timer_exchange-------------------------------------------------------------------------------------
 void Timer_exchange(int value) {
-	static int dz = 1; // 방향 변경 변수
-	translate_origin_obj.z -= 0.01f * dz;
-	translate_origin_glu.z += 0.01f * dz;
+	if (all_animation == 1) {
+		static int dz = 1; // 방향 변경 변수
+		translate_origin_obj.z -= 0.01f * dz;
+		translate_origin_glu.z += 0.01f * dz;
 
-	if (translate_origin_obj.z <= -0.9f || translate_origin_obj.z >= 0.9f) {
-		dz *= -1; // 방향 변경
+		if (translate_origin_obj.z <= -0.9f || translate_origin_obj.z >= 0.9f) {
+			dz *= -1; // 방향 변경
+		}
 	}
 	glutPostRedisplay();
 	if (b_animation)
 		glutTimerFunc(10, Timer_exchange, 0);
 }
-//----------Timer_rotate-------------------------------------------------------------------------------------
-void Timer_rotate(int value) {
-	rotate.x += 1.0f;
+//----------Timer_x_rotate-------------------------------------------------------------------------------------
+void Timer_y_rotate(int value) {
+	if (all_animation == 2) {
+		rotate.y += 1.0f;
 
-	// 현재 각도 값을 정수로 변환
-	int currentAngle = (int)rotate.x;
+		// 현재 각도 값을 정수로 변환
+		int currentAngle = (int)rotate.y;
 
-	if (currentAngle == 180 || currentAngle == 360) {
-		b_animation = !b_animation;
-	}
+		if (currentAngle == 180 || currentAngle == 360) {
+			b_animation = !b_animation;
+		}
 
-	if (rotate.x >= 360.0f) {
-		rotate.x -= 360.0f;
+		if (rotate.y >= 360.0f) {
+			rotate.y -= 360.0f;
+		}
 	}
 
 	glutPostRedisplay();
 	if (b_animation)
-		glutTimerFunc(10, Timer_rotate, 0);
+		glutTimerFunc(10, Timer_y_rotate, 0);
+}
+//----------Timer_y_rotate-------------------------------------------------------------------------------------
+void Timer_x_rotate(int value) {
+	if (all_animation == 3) {
+		rotate.x += 1.0f;
+
+		// 현재 각도 값을 정수로 변환
+		int currentAngle = (int)rotate.x;
+
+		if (currentAngle == 180 || currentAngle == 360) {
+			b_animation = !b_animation;
+		}
+
+		if (rotate.x >= 360.0f) {
+			rotate.x -= 360.0f;
+		}
+	}
+	glutPostRedisplay();
+	if (b_animation)
+		glutTimerFunc(10, Timer_x_rotate, 0);
+}
+//----------circle_spiral()------------------------------------------------------------------------------------
+void Timer_circle_spiral(int value) {
+	//translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
+	//translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
+	if (all_animation == 4) {
+
+		int dz = 1; // 방향 변경 변수
+		translate_origin_obj.z -= 0.01f * dz;
+		translate_origin_glu.z += 0.01f * dz;
+
+		if (translate_origin_obj.z <= 0.0f) {
+			dz *= -1; // 방향 변경
+		}
+		rotate.y += 1.0f;
+		if (rotate.y >= 360.0f) {
+			rotate.y -= 360.0f;
+		}
+	}
+	glutPostRedisplay();
+	if (b_animation)
+		glutTimerFunc(10, Timer_circle_spiral, 0);
 }
 //--------keyboard----------------------------------------
 //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
@@ -651,7 +699,8 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case'P':case'p'://p : 초기 위치로 리셋(자전 애니메이션도 멈추기
-		rotateXY = false;
+		cube.reset();
+		b_circle_spiral = false;
 		rotate.x = 0.0f;
 		rotate.y = 0.0f;
 		degree = 0.0f;
@@ -659,34 +708,46 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		rotateobj.y = 0.0f;
 		rotateobjglu.x = 0.0f;
 		rotateobjglu.y = 0.0f;
-
+		all_animation = 0;
+		translate_origin_glu = { 0.0f,0.0f,-0.9f };
+		translate_origin_obj = { 0.0f,0.0f,0.9f };
 		target = 1; // 정육면체
-		targetglu = 4; // 원뿔
+		targetglu = 3; // 원뿔
 
 		InitBuffer_cube(cube);
 		InitBuffer_square_horn(square_horn);
 		break;
 
 	case'R':case'r': //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
-		//rotateXY = rotateXY == true ? false : true;
-		//glutTimerFunc(10, Timer_rotate, 0);
+		std::cout << "실행완료" << "\n";
+		b_animation = b_animation == true ? false : true;
+		b_circle_spiral = b_circle_spiral == true ? false : true;
+		glutTimerFunc(10, Timer_circle_spiral, 0);
 		break;
 
 	case'T':case't'://"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 -> 제자리로 다시 이동하는 애니메이션",
+		all_animation = 4;
+		translate_origin_glu = { 0.0f,0.0f,-0.9f };
+		translate_origin_obj = { 0.0f,0.0f,0.9f };
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, origin_loop, 0);
 		break;
 	case'1'://"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션"
+		all_animation = 1;
+		translate_origin_glu = { 0.0f,0.0f,-0.9f };
+		translate_origin_obj = { 0.0f,0.0f,0.9f };
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_exchange, 0);
 		break;
 	case'2'://"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
+		all_animation = 2;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_exchange, 0);
+		glutTimerFunc(10, Timer_y_rotate, 0);
 		break;
 	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션", x 축 회전
+		all_animation = 3;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_rotate, 0);
+		glutTimerFunc(10, Timer_x_rotate, 0);
 		break;
 
 	}
@@ -763,10 +824,25 @@ GLvoid drawScene()
 
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+		
+		//if (all_animation == 1 || all_animation == 4) {
+		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.9f
+		//}
+		//else if (all_animation == 2) {
+		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		//}
+		//else if (all_animation == 3) {
+		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
+		//}
+		//else if (all_animation == 5) { //원 스파이럴
+		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu));
+		//}
 
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
+		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.9f
 
-		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.8f
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.y), glm::vec3(0.0f, 1.0f, 0.0f));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.x), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -793,8 +869,21 @@ GLvoid drawScene()
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 
+		//if (all_animation == 1 || all_animation == 4) {
+		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
+		//}
+		//else if (all_animation == 2) {
+		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		//}
+		//else if (all_animation == 3) {
+		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
+		//}
+		//else if (all_animation == 5) { //원 스파이럴
+		//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu));
+		//}
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
-
 		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.y), glm::vec3(0.0f, 1.0f, 0.0f));
