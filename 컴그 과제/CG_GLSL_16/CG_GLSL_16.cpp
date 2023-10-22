@@ -9,6 +9,10 @@
 #include <gl/glm/ext.hpp>
 #include <gl/glm/gtc/matrix_transform.hpp>
 
+const std::string Guide[]{
+	"dsadasda",
+	"dsadsadad"
+};
 //-------------------------------------------------------------------------------------------------------------------------
 //glew32.lib freeglut.lib 
 //-------------------------------------------------------------------------------------------------------------------------
@@ -26,6 +30,7 @@ int randomnum(int a, int b) {
 	std::uniform_int_distribution dis(a, b);
 	return dis(gen);
 }
+
 ////-------------------------------------------------------------------------------------------------------------------------
 class linexyz {
 public:
@@ -585,7 +590,6 @@ void Timer_rotate(int value) {
 	if (rotate.y > 360.0f) {
 		rotate.y -= 360.0f;
 	}
-	std::cout << "rotateXY :" << rotateXY << '\n';
 
 	glutPostRedisplay();
 	if (rotateXY)
@@ -597,20 +601,20 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	std::vector<float> vertex;
 	switch (key)
 	{
-		//c: 육면체 
-	case'C':case'c':
-		target = 1;
-		break;
-		//p: 사각 뿔 
 	case'T':case't':
 		target = 0;
 		break;
-	case'G':case'g':
+	case'G':case'g': // 원뿔
 		targetglu = 4;
 		break;
-	case'R':case'r':
+
+	case'C':case'c':
+		target = randomnum(0, 1);
+		targetglu = randomnum(3, 4);
+		break;
+
+	case'R':case'r': // y축 기준으로 전체 자전
 		rotateXY = rotateXY == true ? false : true;
-		std::cout << "rotateXY :" << rotateXY << '\n';
 		glutTimerFunc(10, Timer_rotate, 0);
 		break;
 	case'H':case'h'://h: 은면제거 적용/해제
@@ -938,6 +942,10 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 
 	reset();
 	std::cout << " reset 초기화 완료" << '\n';
+
+	for (std::string s : Guide) {
+		std::cout << s << '\n';
+	}
 
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(Reshape);
