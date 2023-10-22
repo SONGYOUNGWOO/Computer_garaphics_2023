@@ -8,14 +8,22 @@
 #include <gl/glm/glm.hpp>
 #include <gl/glm/ext.hpp>
 #include <gl/glm/gtc/matrix_transform.hpp>
-
-const std::string Guide[]{
-	"dsadasda",
-	"dsadsadad"
-};
 //-------------------------------------------------------------------------------------------------------------------------
 //glew32.lib freeglut.lib 
 //-------------------------------------------------------------------------------------------------------------------------
+const std::string Guide[]{
+	"--------------------------------------------------------------------------------------------------"
+	"x/X/y/Y: 객체의 x/y 축에 대하여 각각 양 음 방향으로 회전하기 두 객체가 모두 자전",
+	"1/2/3: 1 을 누르면 좌측의 객체만 , 2 를 누르면 우측의 객체만 , 3 을 누르면 모두 자전한다",
+	"r/R: 두 객체를 화면 중앙의 y 축에 대하여 양 음 방향으로 회전하기 공전",
+	"h/H: 은면제거 적용/해제",
+	"w/W: 와이어 객체/솔리드 객체",
+	"c : 두 도형을 다른 도형으로 바꾼다",
+	"s : 초기화 하기",
+	"q : 프로그램 종료",
+	"--------------------------------------------------------------------------------------------------"
+};
+
 #define _CRT_SECURE_NO_WARNINGS //--- 프로그램 맨 앞에 선언할 것
 //-------------------------------------------------------------------------------------------------------------------------
 float randomnum(float a, float b) {
@@ -229,12 +237,11 @@ bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ false };//면 또는 선
 bool rotateXY{ false };// 회전
 bool left_button{ false }; //좌클릭
+int objglu{ 3 }; // 1 클릭시 glu만 선택 자전
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
 glm::vec3 rotate{ 0.0f }; // 축을 기준으로 공전 또는 자전
-
-float rotateX{ 1.0f };//X 축 회전
-float rotateY{ 1.0f };//Y 축 회전
-//float orbit{ 1.0f };//Y 축 회전
+glm::vec3 rotateobjglu{ 0.0f }; // 축을 기준으로 공전 또는 자전
+glm::vec3 rotateobj{ 0.0f }; // 축을 기준으로 공전 또는 자전
 //-------------------------------------------------------------------------------------------------------
 
 char* filetobuf(const char* file)
@@ -566,9 +573,11 @@ void Motion(int x, int y) {
 }
 //----------Timer_rotateX-------------------------------------------------------------------------------------
 void TimerrotateX(int value) {
-	rotateX += 1.0f;
-	if (rotateX > 360.0f) {
-		rotateX -= 360.0f;
+	rotateobj.x += 1.0f;
+	rotateobjglu.x += 1.0f;
+	if (rotateobj.x > 360.0f or rotateobjglu.x > 360.0f) {
+		rotateobj.x -= 360.0f;
+		rotateobjglu .x -= 360.0f;
 	}
 	glutPostRedisplay();
 	if (rotateXY)
@@ -576,9 +585,19 @@ void TimerrotateX(int value) {
 }
 //----------Timer_rotateY-------------------------------------------------------------------------------------
 void TimerrotateY(int value) {
-	rotateY += 1.0f;
-	if (rotateY > 360.0f) {
-		rotateY -= 360.0f;
+	if (objglu == 1) {
+		rotateobjglu.y += 1.0f;
+	}
+	else if (objglu == 2) {
+		rotateobj.y += 1.0f;
+	}
+	else if (objglu == 3) {
+		rotateobj.y += 1.0f;
+		rotateobjglu.y += 1.0f;
+	}
+	if (rotateobj.x > 360.0f or rotateobjglu.x > 360.0f) {
+		rotateobj.x -= 360.0f;
+		rotateobjglu.x -= 360.0f;
 	}
 	glutPostRedisplay();
 	if (rotateXY)
@@ -601,13 +620,23 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	std::vector<float> vertex;
 	switch (key)
 	{
-	case'T':case't':
-		target = 0;
-		break;
-	case'G':case'g': // 원뿔
-		targetglu = 4;
-		break;
 
+	//1 을 누르면 좌측의 객체만(glu) , 2 를 누르면 우측의 객체만 , 3 을 누르면 모두 자전한다
+	case'1':
+		objglu = 1;
+		rotateXY = rotateXY == true ? false : true;
+		glutTimerFunc(10, TimerrotateY, 0);
+		break;
+	case'2':
+		objglu = 2;
+		rotateXY = rotateXY == true ? false : true;
+		glutTimerFunc(10, TimerrotateY, 0);
+		break;
+	case'3':
+		objglu = 3;
+		rotateXY = rotateXY == true ? false : true;
+		glutTimerFunc(10, TimerrotateY, 0);
+		break;
 	case'C':case'c':
 		target = randomnum(0, 1);
 		targetglu = randomnum(3, 4);
@@ -618,50 +647,33 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		glutTimerFunc(10, Timer_rotate, 0);
 		break;
 	case'H':case'h'://h: 은면제거 적용/해제
-		if (DEPTH_T) {
-			DEPTH_T = false;
-		}
-		else {
-			DEPTH_T = true;
-		}
-		std::cout << "DEPTH_T = " << DEPTH_T << "\n";
+		DEPTH_T = DEPTH_T == true ? false : true;
 		break;
-		//w/W: 와이어 객체/솔리드 객체
-	case'W':case'w':
-		if (t_or_l) {
-			t_or_l = false;
-		}
-		else {
-			t_or_l = true;
-		}
-		std::cout << "t_or_l = " << t_or_l << "\n";
+		
+	case'W':case'w'://w/W: 와이어 객체/솔리드 객체
+		t_or_l = t_or_l == true ? false : true;
 		break;
-		//x / X: x축을 기준으로 양 / 음 방향으로 회전 애니메이션(자전)
-	case'X':case'x':
-		if (rotateXY) {
-			rotateXY = false;
-		}
-		else {
-			rotateXY = true;
-		}
+	case'X':case'x'://x / X: x축을 기준으로 양 / 음 방향으로 회전 애니메이션(자전)
+		rotateXY = rotateXY == true ? false : true;
 		glutTimerFunc(10, TimerrotateX, 0);
-
 		break;
-		//y / Y : y축을 기준으로 양 / 음 방향으로 회전 애니메이션(자전)
-	case'Y':case'y':
-		if (rotateXY) {
-			rotateXY = false;
-		}
-		else {
-			rotateXY = true;
-		}
+	case'Y':case'y'://y / Y : y축을 기준으로 양 / 음 방향으로 회전 애니메이션(자전)
+		rotateXY = rotateXY == true ? false : true;
 		glutTimerFunc(10, TimerrotateY, 0);
 		break;
-		//s : 초기 위치로 리셋(자전 애니메이션도 멈추기
-	case'S':case's':
+	case'S':case's'://s : 초기 위치로 리셋(자전 애니메이션도 멈추기
 		rotateXY = false;
-		rotateX = 0.0f;
-		rotateY = 0.0f;
+		rotate.x = 0.0f;
+		rotate.y = 0.0f;
+		degree = 0.0f;
+		rotateobj.x = 0.0f;
+		rotateobj.y = 0.0f;
+		rotateobjglu.x = 0.0f;
+		rotateobjglu.y = 0.0f;
+
+		objglu = 3; // 둘 다
+		target = 1; // 정육면체
+		targetglu = 4; // 원뿔
 
 		InitBuffer_cube(cube);
 		InitBuffer_square_horn(square_horn);
@@ -748,8 +760,8 @@ GLvoid drawScene()
 
 		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, -0.8f));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateY), glm::vec3(0.0f, 1.0f, 0.0f));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateX), glm::vec3(1.0f, 0.0f, 0.0f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.x), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
@@ -777,8 +789,8 @@ GLvoid drawScene()
 
 		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, 0.8f));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateY), glm::vec3(0.0f, 1.0f, 0.0f));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateX), glm::vec3(1.0f, 0.0f, 0.0f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.x), glm::vec3(1.0f, 0.0f, 0.0f));
 
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
