@@ -588,6 +588,9 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case'T':case't':
 		target = 0;
 		break;
+	case'G':case'g':
+		target = 4;
+		break;
 		//h: 은면제거 적용/해제
 	case'H':case'h':
 		if (DEPTH_T) {
@@ -681,16 +684,18 @@ GLvoid drawScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 	glUseProgram(shaderProgramID);						//--- 렌더링 파이프라인에 세이더 불러오기
 
-	glm::mat4 transformMatrix(1.0f);
-	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
-	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-	transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f, 10.0f, 10.0f));
-	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+	{
+		glm::mat4 transformMatrix(1.0f);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+		transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f, 10.0f, 10.0f));
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 
-	glBindVertexArray(xyz.vao);
-	glLineWidth(4);
-	glDrawArrays(GL_LINES, 0, 6);
+		glBindVertexArray(xyz.vao);
+		glLineWidth(4);
+		glDrawArrays(GL_LINES, 0, 6);
+	}
 
 	if (DEPTH_T) {
 		glEnable(GL_DEPTH_TEST);
@@ -711,6 +716,7 @@ GLvoid drawScene()
 
 	}
 	{
+		
 		GLUquadricObj* qobj;
 		glLineWidth(1);
 
@@ -718,7 +724,11 @@ GLvoid drawScene()
 		gluQuadricDrawStyle(qobj, GLU_LINE); // 도형 스타일
 		gluQuadricNormals(qobj, GLU_SMOOTH); //? 생략 가능
 		gluQuadricOrientation(qobj, GLU_OUTSIDE); //? 생략 가능
-		gluSphere(qobj, 0.5, 50, 50); // 객체 만들기
+
+		if (target == 3)
+			gluSphere(qobj, 0.5, 50, 50); // 구 객체 만들기
+		else if (target == 4)
+			gluCylinder(qobj, 1.0, 0.0, 2.0, 20, 8);
 	}
 
 
@@ -742,7 +752,7 @@ GLvoid drawScene()
 		}
 	}
 	//정육면체
-	else {
+	else if (target == 1) {
 		glBindVertexArray(cube.vao);								//--- 사용할 VAO 불러오기
 		//면으로 출력
 		if (t_or_l)
