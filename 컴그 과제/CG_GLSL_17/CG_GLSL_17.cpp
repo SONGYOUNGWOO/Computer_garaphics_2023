@@ -658,19 +658,18 @@ void Timer_x_rotate(int value) {
 void Timer_circle_spiral(int value) {
 	//translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
 	//translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
-	if (all_animation == 4) {
+	if (all_animation == 5) {
 
-		int dz = 1; // 방향 변경 변수
-		translate_origin_obj.z -= 0.01f * dz;
-		translate_origin_glu.z += 0.01f * dz;
+		static int dz = 1; // 방향 변경 변수
+		translate_origin_obj.z -= 0.005f * dz;
+		translate_origin_glu.z += 0.005f * dz;
 
-		if (translate_origin_obj.z <= 0.0f) {
+		if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.9f) {
 			dz *= -1; // 방향 변경
 		}
-		rotate.y += 1.0f;
-		if (rotate.y >= 360.0f) {
-			rotate.y -= 360.0f;
-		}
+		rotate.y += 4.0f;
+		std::cout << "obj.z의 값: " << translate_origin_obj.z << "\n";
+		
 	}
 	glutPostRedisplay();
 	if (b_animation)
@@ -719,6 +718,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case'R':case'r': //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
+		all_animation = 5;
 		std::cout << "실행완료" << "\n";
 		b_animation = b_animation == true ? false : true;
 		b_circle_spiral = b_circle_spiral == true ? false : true;
