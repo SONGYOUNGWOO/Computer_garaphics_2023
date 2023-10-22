@@ -218,14 +218,18 @@ const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
 shapecube cube;
 shapep square_horn;
 linexyz xyz;//xyz축 그리기
-int target{ 0 };  //선택한 도형
+int target{ 1 };  //선택한 도형 처음 도형은 정육면체
+int targetglu{ 4 };//선택한 glu 도형 처음 도형은 원 뿔
 bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ false };//면 또는 선
 bool rotateXY{ false };// 회전
 bool left_button{ false }; //좌클릭
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
+glm::vec3 rotate{ 0.0f }; // 축을 기준으로 공전 또는 자전
+
 float rotateX{ 1.0f };//X 축 회전
 float rotateY{ 1.0f };//Y 축 회전
+//float orbit{ 1.0f };//Y 축 회전
 //-------------------------------------------------------------------------------------------------------
 
 char* filetobuf(const char* file)
@@ -555,7 +559,7 @@ void Motion(int x, int y) {
 
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
-//----------TimerrotateX-------------------------------------------------------------------------------------
+//----------Timer_rotateX-------------------------------------------------------------------------------------
 void TimerrotateX(int value) {
 	rotateX += 1.0f;
 	if (rotateX > 360.0f) {
@@ -565,7 +569,7 @@ void TimerrotateX(int value) {
 	if (rotateXY)
 		glutTimerFunc(10, TimerrotateX, 0);
 }
-//----------TimerrotateY-------------------------------------------------------------------------------------
+//----------Timer_rotateY-------------------------------------------------------------------------------------
 void TimerrotateY(int value) {
 	rotateY += 1.0f;
 	if (rotateY > 360.0f) {
@@ -575,6 +579,19 @@ void TimerrotateY(int value) {
 	if (rotateXY)
 		glutTimerFunc(10, TimerrotateY, 0);
 }
+//----------Timer_rotate-------------------------------------------------------------------------------------
+void Timer_rotate(int value) {
+	rotate.y += 1.0f;
+	if (rotate.y > 360.0f) {
+		rotate.y -= 360.0f;
+	}
+	std::cout << "rotateXY :" << rotateXY << '\n';
+
+	glutPostRedisplay();
+	if (rotateXY)
+		glutTimerFunc(10, Timer_rotate, 0);
+}
+
 //--------keyboard----------------------------------------
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	std::vector<float> vertex;
@@ -589,10 +606,14 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		target = 0;
 		break;
 	case'G':case'g':
-		target = 4;
+		targetglu = 4;
 		break;
-		//h: 은면제거 적용/해제
-	case'H':case'h':
+	case'R':case'r':
+		rotateXY = rotateXY == true ? false : true;
+		std::cout << "rotateXY :" << rotateXY << '\n';
+		glutTimerFunc(10, Timer_rotate, 0);
+		break;
+	case'H':case'h'://h: 은면제거 적용/해제
 		if (DEPTH_T) {
 			DEPTH_T = false;
 		}
@@ -702,19 +723,8 @@ GLvoid drawScene()
 	else {
 		glDisable(GL_DEPTH_TEST);
 	}
-	{
-		
-		glm::mat4 transformMatrix(1.0f);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateY), glm::vec3(0.0f, 1.0f, 0.0f));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateX), glm::vec3(1.0f, 0.0f, 0.0f));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
-		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
-
-	}
-	//glu----------------------------------
+	
+	//glu---------------------------------- 
 	{
 		GLUquadricObj* qobj;
 		glLineWidth(1);
@@ -726,23 +736,51 @@ GLvoid drawScene()
 
 
 		glm::mat4 transformMatrix(1.0f);
+
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+
+		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, -0.8f));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateY), glm::vec3(0.0f, 1.0f, 0.0f));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateX), glm::vec3(1.0f, 0.0f, 0.0f));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
-		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, 0.5f));
+
+	
+		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 
-		if (target == 3)
+		if (targetglu == 3)
 			gluSphere(qobj, 0.5, 50, 50); // 구 객체 만들기
-		else if (target == 4)
+
+		else if (targetglu == 4)
 			gluCylinder(qobj, 1.0, 0.0, 2.0, 20, 8);
 
 
 	}
 
+	{
+
+		glm::mat4 transformMatrix(1.0f);
+
+
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+
+		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, 0.8f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateY), glm::vec3(0.0f, 1.0f, 0.0f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateX), glm::vec3(1.0f, 0.0f, 0.0f));
+
+		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+
+	}
 
 	//피라미드
 	if (target == 0) {
