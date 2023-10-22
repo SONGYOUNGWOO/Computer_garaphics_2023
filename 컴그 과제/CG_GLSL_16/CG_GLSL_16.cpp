@@ -638,8 +638,8 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		glutTimerFunc(10, TimerrotateY, 0);
 		break;
 	case'C':case'c':
-		target = randomnum(0, 1);
-		targetglu = randomnum(3, 4);
+		target = target == 0 ? 1 : 0;
+		targetglu = targetglu == 3 ? 4 : 3;
 		break;
 
 	case'R':case'r': // y축 기준으로 전체 자전
