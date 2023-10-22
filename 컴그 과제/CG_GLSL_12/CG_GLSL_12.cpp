@@ -8,14 +8,14 @@
 #include <gl/glm/glm.hpp>
 #include <gl/glm/ext.hpp>
 #include <gl/glm/gtc/matrix_transform.hpp>
-
+//-------------------------------------------------------------------------------------------------------------------------
 //glew32.lib freeglut.lib 
 #define _CRT_SECURE_NO_WARNINGS //--- 프로그램 맨 앞에 선언할 것
 typedef struct allshape {
 	GLfloat x, y, size;			// 중심 좌표, 마우스 클릭
 	float time,dx,dy;
 	int pointnum;
-	int indexnum; //index.size()
+	int indexnum;				 //index.size()
 	GLuint vao;
 	GLuint vbo[2];
 	GLuint ebo;	
@@ -69,7 +69,7 @@ void TimerB(int value);
 GLvoid Reshape(int w, int h);
 //void InitBuffer();
 void InitBuffer(shape& s);
-
+//-----------------------------------------------------------------------------------------------------------------------------
 float randomnum(float a, float b) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -110,7 +110,6 @@ void make_fragmentShaders()
 	}
 }
 //--- 버퍼 생성하고 데이터 받아오기
-
 void make_shaderProgram()
 {
 
@@ -132,6 +131,7 @@ void make_shaderProgram()
 	//return shaderProgramID;
 
 }
+//-----------------------------------------------------------------------------------------------------------------------------
 
 //--------------------InitBuffer---------------------------------------
 void InitBuffer(shape& s) {
@@ -177,9 +177,9 @@ void InitBuffer(shape& s) {
 		color.push_back(s.color.at(i * 3 + 2));	//b
 
 		//디버깅
-		{
+/*		{
 			std::cout << std::format("현재 도형 [{}]: vertex - ({},{},{}), time : {}\n", i, vertex.at(i * 3), vertex.at(i * 3 + 1), vertex.at(i * 3 + 2), s.time);
-		}		
+		}	*/	
 	}
 
 	if(s.pointnum + 1 > 0)
@@ -308,7 +308,7 @@ void settriangle(int i) {
 ////}
 
 
-//충돌판정 =================
+//충돌판정 -----------------------------------------------------------------------------------------------------
 bool IsCollision(const shape& rect1, const shape& rect2) {
 
 	// 두 사각형의 축 정의
@@ -583,28 +583,28 @@ GLvoid drawScene()
 
 
 void reset() {
-	n = 15;
-	for (int i = 0; i < 15; i++) {
+	n = 0;
+	for (shape& r : rect) {
 		
-		rect[i].x = randomnum(-1.0, 1.0);
-		rect[i].y = randomnum(-1.0, 1.0);
-		rect[i].dx =  randomnum(0.0, 1.0) < 0.5f ? 1 : -1;
-		rect[i].dy =  randomnum(0.0, 1.0) < 0.5f ? 1 : -1;
+		r.x = randomnum(-1.0, 1.0);
+		r.y = randomnum(-1.0, 1.0);
+		r.dx =  randomnum(0.0, 1.0) < 0.5f ? 1 : -1;
+		r.dy =  randomnum(0.0, 1.0) < 0.5f ? 1 : -1;
 
-		rect[i].motions = randomnum(0.0, 1.0) < 0.5f ? 1 : 2;
-		rect[i].chy = 1.0f; // 변화량 기록
-		rect[i].down = 0;   // y가 변하는가
+		r.motions = randomnum(0.0, 1.0) < 0.5f ? 1 : 2;
+		r.chy = 1.0f; // 변화량 기록
+		r.down = 0;   // y가 변하는가
 
-		rect[i].time = 0.0f;
-		rect[i].pointnum = i / 3 + 1;
-		rect[i].size = 0.2f;
+		r.time = 0.0f;
+		r.pointnum =  n++ / 3 + 1;
+		r.size = 0.2f;
 
 		for (int j = 0; j < 7; j++) {
-			rect[i].color.push_back(randomnum(0.0, 1.0));		//r
-			rect[i].color.push_back(randomnum(0.0, 1.0));		//g
-			rect[i].color.push_back(randomnum(0.0, 1.0));		//b
+			r.color.push_back(randomnum(0.0, 1.0));		//r
+			r.color.push_back(randomnum(0.0, 1.0));		//g
+			r.color.push_back(randomnum(0.0, 1.0));		//b
 		}
-		InitBuffer(rect[i]);
+		InitBuffer(r);
 	}
 
 }
@@ -614,6 +614,7 @@ GLvoid Reshape(int w, int h)
 	glViewport(0, 0, w, h);
 }
 
+//---------------------mian함수--------------------------------------------------------------------------
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
 	//--- 윈도우 생성하기
