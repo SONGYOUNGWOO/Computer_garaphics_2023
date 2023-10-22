@@ -611,22 +611,29 @@ void Timer_exchange(int value) {
 }
 //----------Timer_rotate-------------------------------------------------------------------------------------
 void Timer_rotate(int value) {
-	rotate.y += 1.0f;
-	if (rotate.y > 360.0f) {
-		rotate.y -= 360.0f;
+	rotate.x += 1.0f;
+
+	// 현재 각도 값을 정수로 변환
+	int currentAngle = (int)rotate.x;
+
+	if (currentAngle == 180 || currentAngle == 360) {
+		b_animation = !b_animation;
+	}
+
+	if (rotate.x >= 360.0f) {
+		rotate.x -= 360.0f;
 	}
 
 	glutPostRedisplay();
-	if (rotateXY)
+	if (b_animation)
 		glutTimerFunc(10, Timer_rotate, 0);
 }
-
 //--------keyboard----------------------------------------
 //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
 //"키보드 t: 현재 자리에서 두 도형이 원점으로 이동  제자리로 다시 이동하는 애니메이션",
 //"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션",
 //"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
-//"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
+//"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션", x 축 회전
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	std::vector<float> vertex;
 	switch (key)
@@ -677,9 +684,9 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_exchange, 0);
 		break;
-	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
+	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션", x 축 회전
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_exchange, 0);
+		glutTimerFunc(10, Timer_rotate, 0);
 		break;
 
 	}
@@ -757,7 +764,7 @@ GLvoid drawScene()
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
 
 		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.8f
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
@@ -786,7 +793,7 @@ GLvoid drawScene()
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
 
 		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
