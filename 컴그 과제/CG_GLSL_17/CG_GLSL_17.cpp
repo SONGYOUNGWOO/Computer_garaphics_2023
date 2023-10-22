@@ -243,10 +243,10 @@ bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ false };//면 또는 선
 bool rotateXY{ false };// 회전
 bool left_button{ false }; //좌클릭
-bool b_origin_loop{ false };
+bool b_animation{ false };
 //-----------------------------------------------------------
-glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.8f
-glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.8f
+glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
+glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
 glm::vec3 rotate{ 0.0f }; // 축을 기준으로 공전 또는 자전
 glm::vec3 rotateobjglu{ 0.0f }; // 축을 기준으로 공전 또는 자전
@@ -585,22 +585,29 @@ void Motion(int x, int y) {
 
 //----------Timer_origin_loop-------------------------------------------------------------------------------------
 void origin_loop(int value) {
-	static int dz = 1; // 방향 변경 변수를 static으로 선언하여 유지
+	static int dz = 1; // 방향 변경 변수
 	translate_origin_obj.z -= 0.01f * dz;
 	translate_origin_glu.z += 0.01f * dz;
 
-	if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.8f) {
+	if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.9f) {
 		dz *= -1; // 방향 변경
 	}
 	glutPostRedisplay();
-	if (b_origin_loop)
+	if (b_animation)
 		glutTimerFunc(10, origin_loop, 0);
 }
-//----------Timer_rotateY-------------------------------------------------------------------------------------
-void TimerrotateY(int value) {
+//----------Timer_exchange-------------------------------------------------------------------------------------
+void Timer_exchange(int value) {
+	static int dz = 1; // 방향 변경 변수
+	translate_origin_obj.z -= 0.01f * dz;
+	translate_origin_glu.z += 0.01f * dz;
+
+	if (translate_origin_obj.z <= -0.9f || translate_origin_obj.z >= 0.9f) {
+		dz *= -1; // 방향 변경
+	}
 	glutPostRedisplay();
-	if (rotateXY)
-		glutTimerFunc(10, TimerrotateY, 0);
+	if (b_animation)
+		glutTimerFunc(10, Timer_exchange, 0);
 }
 //----------Timer_rotate-------------------------------------------------------------------------------------
 void Timer_rotate(int value) {
@@ -659,20 +666,20 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case'T':case't'://"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 -> 제자리로 다시 이동하는 애니메이션",
-		b_origin_loop = b_origin_loop == true ? false : true;
+		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, origin_loop, 0);
 		break;
 	case'1'://"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션"
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateY, 0);
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_exchange, 0);
 		break;
 	case'2'://"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateY, 0);
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_exchange, 0);
 		break;
 	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
-		rotateXY = rotateXY == true ? false : true;
-		glutTimerFunc(10, TimerrotateY, 0);
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_exchange, 0);
 		break;
 
 	}
@@ -856,8 +863,8 @@ void reset() {
 	square_horn.dx = 0.0f;
 	square_horn.dy = 0.0f;
 
-	translate_origin_glu = {0.0f,0.0f,-0.8f};
-	translate_origin_obj = {0.0f,0.0f,0.8f};
+	translate_origin_glu = {0.0f,0.0f,-0.9f};
+	translate_origin_obj = {0.0f,0.0f,0.9f};
 	InitBuffer_cube(cube);
 	InitBuffer_square_horn(square_horn);
 
