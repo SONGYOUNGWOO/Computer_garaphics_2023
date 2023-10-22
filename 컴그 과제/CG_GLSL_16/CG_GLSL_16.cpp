@@ -696,7 +696,6 @@ GLvoid drawScene()
 		glLineWidth(4);
 		glDrawArrays(GL_LINES, 0, 6);
 	}
-
 	if (DEPTH_T) {
 		glEnable(GL_DEPTH_TEST);
 	}
@@ -715,8 +714,8 @@ GLvoid drawScene()
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 
 	}
+	//glu----------------------------------
 	{
-		
 		GLUquadricObj* qobj;
 		glLineWidth(1);
 
@@ -725,13 +724,24 @@ GLvoid drawScene()
 		gluQuadricNormals(qobj, GLU_SMOOTH); //? 생략 가능
 		gluQuadricOrientation(qobj, GLU_OUTSIDE); //? 생략 가능
 
+
+		glm::mat4 transformMatrix(1.0f);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateY), glm::vec3(0.0f, 1.0f, 0.0f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateX), glm::vec3(1.0f, 0.0f, 0.0f));
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
+		transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, 0.5f));
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+
 		if (target == 3)
 			gluSphere(qobj, 0.5, 50, 50); // 구 객체 만들기
 		else if (target == 4)
 			gluCylinder(qobj, 1.0, 0.0, 2.0, 20, 8);
+
+
 	}
-
-
 
 
 	//피라미드
