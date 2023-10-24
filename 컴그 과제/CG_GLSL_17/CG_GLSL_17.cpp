@@ -32,6 +32,9 @@ const std::string Guide[]{
 	"--------------------------------------------------------------------------------------------------"
 };
 //-------------------------------------------------------------------------------------------------------------------------
+
+
+//-------------------------------------------------------------------------------------------------------------------------
 float randomnum(float a, float b) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -278,8 +281,11 @@ bool b_circle_spiral{ false };// 회전
 bool left_button{ false }; //좌클릭
 bool b_animation{ false };
 int all_animation{ 0 }; // 애니메인션 0:x,1:1, 2:2, 3:3, 4:t, 5:r
-float rad = 0;
-float drawr = 0;
+float rad{ 0.0f };
+float drawr_obj{ 0.0f };
+float drawr_glu{ 0.0f };
+float rad_obj{ 0.0f };
+float rad_glu{ 0.0f };
 //-----------------------------------------------------------
 glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
 glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
@@ -593,7 +599,7 @@ void InitBuffer_s_circle_spiral(shap_circle_spiral& s) {
 	std::vector<float> color;
 	float rad = 0;
 	float drawr = 0;
-	while (rad < 360.0 * 5)
+	while (rad < 360.0f * 5 + 1)
 	{
 		vertex.push_back(s.p->x + cos(glm::radians(rad)) * drawr);	//x
 		vertex.push_back(s.p->y = 0.0f);	//y
@@ -603,8 +609,9 @@ void InitBuffer_s_circle_spiral(shap_circle_spiral& s) {
 		color.push_back(s.color.at(0));	//r
 		color.push_back(s.color.at(1));	//g
 		color.push_back(s.color.at(2));	//b
-		drawr += 0.002f;
-		rad += 15.0;
+		drawr += 0.01f;
+		rad += 15.0f;
+		//static_cast<float>(rad);
 	}
 	
 
@@ -628,7 +635,7 @@ void InitBuffer_s_circle_spiral(shap_circle_spiral& s) {
 
 	}
 	s.drawpoint = 1;
-	s.pointnum = vertex.size() / 3;
+	s.pointnum = vertex.size() / 3 ;
 
 	vertex.clear();
 	color.clear();
@@ -743,26 +750,34 @@ void Timer_circle_spiral(int value) {
 	//translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
 	//translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
 	if (all_animation == 5) {
-		//static int dz = 1; // 방향 변경 변수
-		//translate_origin_obj.z -= 0.005f * dz;
-		//translate_origin_glu.z += 0.005f * dz;
-		//rotate.y += 4.0f * dz ;
-		//if (translate_origin_obj.z <= 0.0f || translate_origin_obj.z >= 0.9f) {
-		//	dz *= -1; // 방향 변경
-		//}
-		//
-		//std::cout << "obj.z의 값: " << translate_origin_obj.z << "\n";
-		if (rad < 360 * 5) {
-			std::cout << "rad = " << rad << "\n";
-			translate_origin_obj.x += cos(glm::radians(rad)) * drawr;
-			translate_origin_obj.z += sin(glm::radians(rad)) * drawr;
 
-			translate_origin_glu.x += cos(glm::radians(rad)) * drawr;
-			translate_origin_glu.z += sin(glm::radians(rad)) * drawr
-				;
-			drawr += 0.002f;
-			rad += 15.0;
+		if (rad_glu < 360.0f * 5) {
+			std::cout << "translate_origin_obj = {" << translate_origin_obj.x  << ", " << translate_origin_obj.y << ", " << translate_origin_obj.z << "} " << "\n";
+			drawr_obj += 0.01f;
+			rad_obj += 15.0;
+
+			drawr_glu += 0.01f;
+			rad_glu += 15.0;
+
+			translate_origin_obj.x = cos(glm::radians(rad_obj)) * drawr_obj;
+			translate_origin_obj.z = sin(glm::radians(rad_obj)) * drawr_obj;
+			
+			translate_origin_glu.x = cos(glm::radians(rad_glu)) * drawr_glu;
+			translate_origin_glu.z = sin(glm::radians(rad_glu)) * drawr_glu;
+			if (rad_glu >= 360.0f * 5) {
+				translate_origin_glu = glm::vec3{ 0.0f };
+				drawr_glu = 0.0f;
+				rad_glu = 0.0f;
+			}
+			if (rad_obj >= 360.0f * 5) {
+				translate_origin_obj = glm::vec3{ 0.0f };
+				drawr_obj = 0.0f;
+				rad_obj = 0.0f;
+			}
+			//translate_origin_obj.x += 0.002f;
+			//rotate.y += 15.0f;
 		}
+	
 
 	}
 	glutPostRedisplay();
@@ -821,10 +836,12 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 
 	case'R':case'r': //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
 		all_animation = 5;
-		translate_origin_glu = { 0.0f,0.0f,0.0f };
+		translate_origin_glu = { -0.12f,0.0f,0.0f };
+		drawr_glu = 0.12f ;
+		rad_glu = 180.0f;
 		translate_origin_obj = { 0.0f,0.0f,0.0f };
 		glutTimerFunc(10, Timer_circle_spiral_pointnum, 0);;
-		//std::cout << "실행완료" << "\n";r
+
 		b_animation = b_animation == true ? false : true;
 		b_circle_spiral = b_circle_spiral == true ? false : true;
 		glutTimerFunc(100, Timer_circle_spiral, 0);
@@ -1030,17 +1047,20 @@ GLvoid drawScene()
 	//}
 
 	//s_circle_spiral
-	glBindVertexArray(s_circle_spiral.vao);								//--- 사용할 VAO 불러오기
-	{
-		glm::mat4 transformMatrix(1.0f);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-		transformMatrix = glm::scale(transformMatrix, glm::vec3(4.0f, 4.0f, 4.0f));
-		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
-		glLineWidth(2);
-		glDrawArrays(GL_LINE_STRIP, 0, s_circle_spiral.drawpoint);
+	if (all_animation == 5) {
+		glBindVertexArray(s_circle_spiral.vao);								//--- 사용할 VAO 불러오기
+		{
 
+			glm::mat4 transformMatrix(1.0f);
+			transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+			transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+			transformMatrix = glm::scale(transformMatrix, glm::vec3(1.0f, 1.0f, 1.0f));
+			unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+			glLineWidth(2);
+			glDrawArrays(GL_LINE_STRIP, 0, s_circle_spiral.pointnum);
+
+		}
 	}
 
 
