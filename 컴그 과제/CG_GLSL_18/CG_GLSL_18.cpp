@@ -332,7 +332,7 @@ GLuint shaderProgramID; //--- 셰이더 프로그램
 void make_shaderProgram();
 GLvoid drawScene();
 GLvoid Reshape(int w, int h);
-void getobjfile(bool& retFlag);
+void getobjfile(Mesh& mesh, const std::string& objname);
 //-------------------------------------------------------------------------------------------------------
 void make_vertexShaders()
 {
@@ -921,13 +921,14 @@ GLvoid specialkeyborad(int key, int x, int y) {
 // ---- 그리기 콜백 함수---------------------------------------------------------------------------------------------------
 GLvoid drawScene()
 {
-	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
+	//glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);			//--- 변경된 배경색 설정 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 	glUseProgram(shaderProgramID);						//--- 렌더링 파이프라인에 세이더 불러오기
-
+	//xyz축그리기
 	{
 		glm::mat4 transformMatrix(1.0f);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f, 10.0f, 10.0f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
@@ -944,55 +945,45 @@ GLvoid drawScene()
 		glDisable(GL_DEPTH_TEST);
 	}
 
-
+	
 	
 	//glu---------------------------------- 
-	{
-		GLUquadricObj* qobj;
-		glLineWidth(1);
-
-		qobj = gluNewQuadric(); // 객체 생성하기
-		gluQuadricDrawStyle(qobj, GLU_LINE); // 도형 스타일
-		gluQuadricNormals(qobj, GLU_SMOOTH); //? 생략 가능
-		gluQuadricOrientation(qobj, GLU_OUTSIDE); //? 생략 가능
-
-
-		glm::mat4 transformMatrix(1.0f);
-
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-		
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
-		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.9f
-
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.x), glm::vec3(1.0f, 0.0f, 0.0f));
-
-	
-		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
-		if (all_animation == 5) {
-			transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
-		}
-		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
-
-		if (targetglu == 3)
-			gluSphere(qobj, 0.5, 50, 50); // 구 객체 만들기
-
-		else if (targetglu == 4)
-			gluCylinder(qobj, 1.0, 0.0, 2.0, 20, 8);
-
-
-	}
+	//{
+	//	GLUquadricObj* qobj;
+	//	glLineWidth(1);
+	//	qobj = gluNewQuadric(); // 객체 생성하기
+	//	gluQuadricDrawStyle(qobj, GLU_LINE); // 도형 스타일
+	//	gluQuadricNormals(qobj, GLU_SMOOTH); //? 생략 가능
+	//	gluQuadricOrientation(qobj, GLU_OUTSIDE); //? 생략 가능
+	//	glm::mat4 transformMatrix(1.0f);
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+	//	
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
+	//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_glu)); // 원점, 제자리이동반복 ,0.0f, 0.0f, -0.9f
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobjglu.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	//
+	//	transformMatrix = glm::scale(transformMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
+	//	if (all_animation == 5) {
+	//		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
+	//	}
+	//	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+	//	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+	//	if (targetglu == 3)
+	//		gluSphere(qobj, 0.5, 50, 50); // 구 객체 만들기
+	//	else if (targetglu == 4)
+	//		gluCylinder(qobj, 1.0, 0.0, 2.0, 20, 8);
+	//}
 
 	{
 
 		glm::mat4 transformMatrix(1.0f);
 
 
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
@@ -1011,56 +1002,38 @@ GLvoid drawScene()
 
 	}
 
-	//피라미드
-	if (target == 0) {
-		Mesh& m = mpyramid;
-		glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
-		//면으로 출력
-		if (t_or_l)
-		{
-			glDrawElements(GL_TRIANGLES, m.indexnum, GL_UNSIGNED_INT, 0);	//큐브 출력
-		}
-		//선으로 출력
-		else
-		{
-			for (int j = 0; j < m.indexnum / 3; j++) {
-				glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
-			}
-		}
-	}
+	////피라미드
+	//if (target == 0) {
+	//	Mesh& m = mpyramid;
+	//	glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
+	//	//면으로 출력
+	//	if (t_or_l)
+	//	{
+	//		glDrawElements(GL_TRIANGLES, m.indexnum , GL_UNSIGNED_INT, 0);	//큐브 출력
+	//	}
+	//	//선으로 출력
+	//	else
+	//	{
+	//		for (int j = 0; j < m.indexnum * 3; j++) {
+	//			glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
+	//		}
+	//	}
+	//}
+
 	//정육면체
-	else if (target == 1) {
+	if (target == 1) {
 		Mesh& m = mcube;
 		glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
-		//면으로 출력
-		if (t_or_l)
-		{
-			glDrawElements(GL_TRIANGLES, m.indexnum, GL_UNSIGNED_INT, 0);	//큐브 출력
-		}
-		//선으로 출력
-		else
-		{
-			for (int j = 0; j < m.indexnum / 3; j++) {
+		
+		if (t_or_l) {//면으로 출력
+			glDrawElements(GL_TRIANGLES, m.indexnum * 3, GL_UNSIGNED_INT, 0);	//큐브 출력
+		} 
+		else { //선으로 출력
+			for (int j = 0; j < m.indexnum * 3; j++) {
 				glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
 			}
 		}
 	}
-
-	//std::cout << "출력 후 rect[" << i << "]: (" << rect[i].x << ", " << rect[i].y << ")" << std::endl;
-	//{
-	//	GLint bufferSize = 0;
-	//	glBindBuffer(GL_ARRAY_BUFFER, rect[i].vbo[0]);
-	//	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &bufferSize);
-	//	// 현재 바인딩된 VBO의 크기를 가져옴
-	//	GLfloat* data = new GLfloat[bufferSize / sizeof(GLfloat)];
-	//	glGetBufferSubData(GL_ARRAY_BUFFER, 0, bufferSize, data);
-	//	// VBO의 데이터를 읽어옴
-	//	for (int i = 0; i < bufferSize / sizeof(GLfloat); i++) {
-	//		std::cout << "Data[" << i << "]: " << data[i] << std::endl;
-	//	}
-	//	delete[] data;
-	//	// 데이터 출력 후 메모리를 해제
-	//}
 
 	//s_circle_spiral
 	if (all_animation == 5) {
@@ -1093,8 +1066,8 @@ void reset() {
 	square_horn.dx = 0.0f;
 	square_horn.dy = 0.0f;
 
-	translate_origin_glu = {0.0f,0.0f,-0.9f};
-	translate_origin_obj = {0.0f,0.0f,0.9f};
+	//translate_origin_glu = {0.0f,0.0f,-0.9f};
+	translate_origin_obj = {0.0f,0.0f,0.0f};
 	InitBuffer_cube(cube);
 	InitBuffer_square_horn(square_horn);
 
@@ -1198,7 +1171,7 @@ void ReadObj(Mesh& mesh, FILE* path) {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, facenum * sizeof(glm::uvec3), face, GL_STATIC_DRAW);
 
 	}
-	mcube.indexnum = facenum * 3; // 점의 개수
+	mesh.indexnum = facenum ; // 삼각형 면의 개수
 	//----------------------------------------------
 	delete[] vertex;
 	delete[] face;
