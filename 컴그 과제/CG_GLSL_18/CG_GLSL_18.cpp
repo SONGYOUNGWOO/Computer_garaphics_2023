@@ -20,6 +20,7 @@ const std::string Guide[]{
 	"전체 도형의 이동 : 키보드 명령에 따라 y 축을 제외한 x 축과 z 축 , 두 도형을 위 아래로 이동",
 	"h/H: 은면제거 적용/해제",
 	"w/W: 와이어 객체/솔리드 객체",
+	"y: y 축에 대하여 자전한다 멈춘다",
 	"---애니메이션 구현---",
 	"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
 	"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 ->  제자리로 다시 이동하는 애니메이션",
@@ -722,12 +723,11 @@ void Timer_y_rotate(int value) {
 	if (all_animation == 2) {
 		rotate.y += 1.0f;
 
-		// 현재 각도 값을 정수로 변환
-		int currentAngle = (int)rotate.y;
-
-		if (currentAngle == 180 || currentAngle == 360) {
-			b_animation = !b_animation;
-		}
+		//// 현재 각도 값을 정수로 변환
+		//int currentAngle = (int)rotate.y;
+		//if (currentAngle == 180 || currentAngle == 360) {
+		//	b_animation = !b_animation;
+		//}
 
 		if (rotate.y >= 360.0f) {
 			rotate.y -= 360.0f;
@@ -867,17 +867,17 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, origin_loop, 0);
 		break;
+	case'Y':case'y':// y: y 축에 대하여 자전한다 멈춘다
+		all_animation = 2;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_y_rotate, 0);
+		break;
 	case'1'://"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션"
 		all_animation = 1;
 		translate_origin_glu = { 0.0f,0.0f,-0.9f };
 		translate_origin_obj = { 0.0f,0.0f,0.9f };
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_exchange, 0);
-		break;
-	case'2'://"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
-		all_animation = 2;
-		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_y_rotate, 0);
 		break;
 	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션", x 축 회전
 		all_animation = 3;
@@ -930,6 +930,7 @@ GLvoid drawScene()
 		glm::mat4 transformMatrix(1.0f);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f, 10.0f, 10.0f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
