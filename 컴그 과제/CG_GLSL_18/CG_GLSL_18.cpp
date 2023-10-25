@@ -21,6 +21,7 @@ const std::string Guide[]{
 	"h/H: 은면제거 적용/해제",
 	"w/W: 와이어 객체/솔리드 객체",
 	"y: y 축에 대하여 자전한다 멈춘다",
+	"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
 	"---애니메이션 구현---",
 	"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
 	"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 ->  제자리로 다시 이동하는 애니메이션",
@@ -267,12 +268,16 @@ public:
 	GLuint vbo[2];
 	GLuint ebo;
 	GLuint indexnum;
+	GLuint facen[12]; // 찍을 삼각형
 	Mesh() {
 		vao = 0;
 		vbo[0] = 0;
 		vbo[1] = 0;
 		ebo = 0;
 		indexnum = 0;
+		for (int i = 0; i < 12; ++i) {
+			facen[i] = 0;
+		}
 	}
 };
 Mesh mcube, mpyramid;
@@ -289,7 +294,7 @@ shap_circle_spiral s_circle_spiral; // 원 스파이럴 그리기
 int target{ 1 };  //선택한 도형 처음 도형은 정육면체
 int targetglu{ 3 };//선택한 glu 도형 처음 도형은 구
 bool DEPTH_T{ true }; // 은면제거
-bool t_or_l{ false };//면 또는 선
+bool t_or_l{ true };//면 또는 선
 bool b_circle_spiral{ false };// 회전
 bool left_button{ false }; //좌클릭
 bool b_animation{ false };
@@ -332,6 +337,7 @@ GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID; //--- 셰이더 프로그램
 void make_shaderProgram();
 GLvoid drawScene();
+void meshface_srt();
 GLvoid Reshape(int w, int h);
 void getobjfile(Mesh& mesh, const std::string& objname);
 //-------------------------------------------------------------------------------------------------------
@@ -838,8 +844,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		rotateobjglu.x = 0.0f;
 		rotateobjglu.y = 0.0f;
 		all_animation = 0;
-		translate_origin_glu = { 0.0f,0.0f,-0.9f };
-		translate_origin_obj = { 0.0f,0.0f,0.9f };
+		translate_origin_obj = { 0.0f,0.0f,0.0f };
 		target = 1; // 정육면체
 		targetglu = 3; // 원뿔
 
@@ -859,8 +864,8 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		b_circle_spiral = b_circle_spiral == true ? false : true;
 		glutTimerFunc(100, Timer_circle_spiral, 0);
 		break;
-
-	case'T':case't'://"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 -> 제자리로 다시 이동하는 애니메이션",
+	
+	case'T':case't': //"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
 		all_animation = 4;
 		translate_origin_glu = { 0.0f,0.0f,-0.9f };
 		translate_origin_obj = { 0.0f,0.0f,0.9f };
@@ -979,29 +984,23 @@ GLvoid drawScene()
 	//		gluCylinder(qobj, 1.0, 0.0, 2.0, 20, 8);
 	//}
 
-	{
+	//{
 
-		glm::mat4 transformMatrix(1.0f);
+	//	glm::mat4 transformMatrix(1.0f);
 
 
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
-		transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.x), glm::vec3(1.0f, 0.0f, 0.0f));
-
-		transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
-		if (all_animation == 5) {
-			transformMatrix = glm::scale(transformMatrix, glm::vec3(0.15f, 0.15f, 0.15f));
-		}
-		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
-
-	}
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
+	//	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	//	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	//	transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
+	//	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+	//	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+	//}
 
 	////피라미드
 	//if (target == 0) {
@@ -1027,35 +1026,80 @@ GLvoid drawScene()
 		glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
 		
 		if (t_or_l) {//면으로 출력
-			glDrawElements(GL_TRIANGLES, m.indexnum * 3, GL_UNSIGNED_INT, 0);	//큐브 출력
+			for (int j = 0; j < m.indexnum * 3; j++) {
+				if(j<6){
+					meshface_srt();
+				}
+				else if (j < 12) {
+					meshface_srt();
+				}
+				else if (j < 18) {
+					meshface_srt();
+				}
+				else if (j < 24) {
+					meshface_srt();
+				}
+				else if (j < 30) {
+					meshface_srt();
+				}
+				else if (j < 36) {
+					meshface_srt();
+				}
+
+				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
+			}
+
+
 		} 
 		else { //선으로 출력
 			for (int j = 0; j < m.indexnum * 3; j++) {
+				meshface_srt();
+
 				glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
 			}
 		}
 	}
 
-	//s_circle_spiral
-	if (all_animation == 5) {
-		glBindVertexArray(s_circle_spiral.vao);								//--- 사용할 VAO 불러오기
-		{
-
-			glm::mat4 transformMatrix(1.0f);
-			transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
-			transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-			transformMatrix = glm::scale(transformMatrix, glm::vec3(1.0f, 1.0f, 1.0f));
-			unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
-			glLineWidth(2);
-			glDrawArrays(GL_LINE_STRIP, 0, s_circle_spiral.pointnum);
-
-		}
-	}
+	////s_circle_spiral
+	//if (all_animation == 5) {
+	//	glBindVertexArray(s_circle_spiral.vao);								//--- 사용할 VAO 불러오기
+	//	{
+	//		glm::mat4 transformMatrix(1.0f);
+	//		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
+	//		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+	//		transformMatrix = glm::scale(transformMatrix, glm::vec3(1.0f, 1.0f, 1.0f));
+	//		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+	//		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+	//		glLineWidth(2);
+	//		glDrawArrays(GL_LINE_STRIP, 0, s_circle_spiral.pointnum);
+	//	}
+	//}
 
 
 
 	glutSwapBuffers();									//--- 화면에 출력하기
+}
+
+void meshface_srt()
+{
+	glm::mat4 transformMatrix(1.0f);
+
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
+
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(translate_origin_obj));
+
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(degree), glm::vec3(0.0f, 1.0f, 0.0f));//마우스
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotateobj.x), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
+
+	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 }
 
 
@@ -1173,6 +1217,7 @@ void ReadObj(Mesh& mesh, FILE* path) {
 
 	}
 	mesh.indexnum = facenum ; // 삼각형 면의 개수
+	
 	//----------------------------------------------
 	delete[] vertex;
 	delete[] face;
