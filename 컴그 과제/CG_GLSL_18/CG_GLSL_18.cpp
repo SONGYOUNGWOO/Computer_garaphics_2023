@@ -22,12 +22,9 @@ const std::string Guide[]{
 	"w/W: 와이어 객체/솔리드 객체",
 	"y: y 축에 대하여 자전한다 멈춘다",
 	"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
-	"---애니메이션 구현---",
-	"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
-	"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 ->  제자리로 다시 이동하는 애니메이션",
-	"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션",
-	"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
-	"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션",
+	"s: 육면체의 옆면을 연다 닫는다",
+	"b: 육면체의 뒷면을 연다 닫는다",
+
 	"--------------------------------------------------------------------------------------------------",
 	"p : 초기화 하기",
 	"q : 프로그램 종료",
@@ -275,28 +272,33 @@ public:
 		indexnum = 0;
 	}
 };
-Mesh mcube, mpyramid;
-
 class Mesh_motion_change{
 public:
 	glm::vec3 rotate;
 	glm::vec3 translate;
+	glm::vec3 translate_st;
 	glm::vec3 scale;
-	float rad;
+	float radx, rady , radz;
 	Mesh_motion_change() {
 		rotate = { 0.0f,0.0f,0.0f };
 		translate = { 0.0f,0.0f,0.0f };
-		scale = { 0.0f,0.0f,0.0f };
-		rad = 0.0f;
+		translate_st = { 0.0f,0.0f,0.0f };
+		scale = { 1.0f,1.0f,1.0f };
+		radx = 0.0f;
+		rady = 0.0f;
+		radz = 0.0f;
+	
 	}
 
-}m_motin_ch;
+};
 //--- 전역변수 -------------------------------------------------------------------------------------------------------
 //--------------------xyz-----------------------------------------------------------
 const glm::vec3 x_axis{ 1.0f,0.0f,0.0f }; //x축
 const glm::vec3 y_axis{ 0.0f,1.0f,0.0f }; //y축
 const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
 const glm::vec3 zero{ 0.0f,0.0f,0.0f }; //z축
+Mesh mcube, mpyramid;
+Mesh_motion_change m_motion_ch[6];
 
 shapecube cube;
 shapep square_horn;
@@ -349,7 +351,7 @@ GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID; //--- 셰이더 프로그램
 void make_shaderProgram();
 GLvoid drawScene();
-void meshface_srt();
+void meshface_srt(int& i);
 
 GLvoid Reshape(int w, int h);
 void getobjfile(Mesh& mesh, const std::string& objname);
@@ -710,110 +712,71 @@ void Motion(int x, int y) {
 //----------Timer_turn_top-------------------------------------------------------------------------------------
 void Timer_turn_top(int value) {
 	if (all_animation == 4) {
-		turn_top_rotate.x += 1.0f;
+		m_motion_ch[5].translate_st = { 0.0f,1.0f,0.0f };
+		m_motion_ch[5].radx += 1.0f;
 
-		if (turn_top_rotate.x >= 360.0f) {
-			turn_top_rotate.x -= 360.0f;
+
+		if (m_motion_ch[5].radx >= 360.0f) {
+			m_motion_ch[5].radx -= 360.0f;
 		}
-		std::cout << "turn_top_rotate.x: " << turn_top_rotate.x << "\n";
+		std::cout << "m_motion_ch[5].radx: " << m_motion_ch[5].radx << "\n";
 	}
 	glutPostRedisplay();
 	if (b_animation)
 		glutTimerFunc(10, Timer_turn_top, 0);
 }
-//----------Timer_exchange-------------------------------------------------------------------------------------
-void Timer_exchange(int value) {
-	if (all_animation == 1) {
-		static int dz = 1; // 방향 변경 변수
-		translate_origin_obj.z -= 0.01f * dz;
-		translate_origin_glu.z += 0.01f * dz;
+//----------Timer_turn_face-------------------------------------------------------------------------------------
+void Timer_turn_face(int value) {
+	if (all_animation == 2) {
+		m_motion_ch[2].translate_st = { 0.0f,-1.0f, -1.0f };
+		m_motion_ch[2].radx -= 1.0f;
 
-		if (translate_origin_obj.z <= -0.9f || translate_origin_obj.z >= 0.9f) {
-			dz *= -1; // 방향 변경
-		}
+		//if (m_motion_ch[2].radx <= -90.0f) {
+		//	m_motion_ch[2].radx += 90.0f;
+		//}
+	}
+
+	glutPostRedisplay();
+	if (b_animation && m_motion_ch[2].radx > -90.0f)
+		glutTimerFunc(10, Timer_turn_face, 0);
+}
+//----------Timer_y_rotate-------------------------------------------------------------------------------------
+void Timer_side_up(int value) {
+	if (all_animation == 1) {
+		m_motion_ch[1].translate_st = { 0.0f,-1.0f, 0.0f };
+		m_motion_ch[3].translate_st = { 0.0f,1.0f, 0.0f };
+		m_motion_ch[1].translate.y += 0.1f;
+		m_motion_ch[3].translate.y += 0.1f;
 	}
 	glutPostRedisplay();
-	if (b_animation)
-		glutTimerFunc(10, Timer_exchange, 0);
+	if (b_animation && m_motion_ch[1].translate.y < 2.0f)
+		glutTimerFunc(10, Timer_side_up, 0);
 }
-//----------Timer_x_rotate-------------------------------------------------------------------------------------
-void Timer_y_rotate(int value) {
-	if (all_animation == 2) {
-		rotate.y += 1.0f;
+//----------Timer_back_scale------------------------------------------------------------------------------------
+void Timer_back_scale(int value) {
+	if (all_animation == 5) {
+		m_motion_ch[0].translate_st = { 0.0f,0.0f, 1.0f };
+		m_motion_ch[0].scale.x -= 0.01f;
+		m_motion_ch[0].scale.y -= 0.01f;
+		m_motion_ch[0].scale.z -= 0.01f;
 
-		//// 현재 각도 값을 정수로 변환
-		//int currentAngle = (int)rotate.y;
-		//if (currentAngle == 180 || currentAngle == 360) {
-		//	b_animation = !b_animation;
-		//}
-
+	}
+	glutPostRedisplay();
+	if (b_animation && m_motion_ch[0].scale.x > 0.0f)
+		glutTimerFunc(10, Timer_back_scale, 0);
+}
+//----------Timer_turn_y------------------------------------------------------------------------------------
+void Timer_turn_y(int value) {
+	if (all_animation == 6) {
+		
+		rotate.y += 0.1f;
 		if (rotate.y >= 360.0f) {
 			rotate.y -= 360.0f;
 		}
 	}
-
 	glutPostRedisplay();
 	if (b_animation)
-		glutTimerFunc(10, Timer_y_rotate, 0);
-}
-//----------Timer_y_rotate-------------------------------------------------------------------------------------
-void Timer_x_rotate(int value) {
-	if (all_animation == 3) {
-		rotate.x += 1.0f;
-
-		// 현재 각도 값을 정수로 변환
-		int currentAngle = (int)rotate.x;
-
-		if (currentAngle == 180 || currentAngle == 360) {
-			b_animation = !b_animation;
-		}
-
-		if (rotate.x >= 360.0f) {
-			rotate.x -= 360.0f;
-		}
-	}
-	glutPostRedisplay();
-	if (b_animation)
-		glutTimerFunc(10, Timer_x_rotate, 0);
-}
-//----------circle_spiral()------------------------------------------------------------------------------------
-void Timer_circle_spiral(int value) {
-	//translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
-	//translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
-	if (all_animation == 5) {
-
-		if (rad_glu < 360.0f * 5) {
-			std::cout << "translate_origin_obj = {" << translate_origin_obj.x  << ", " << translate_origin_obj.y << ", " << translate_origin_obj.z << "} " << "\n";
-			drawr_obj += 0.01f;
-			rad_obj += 15.0;
-
-			drawr_glu += 0.01f;
-			rad_glu += 15.0;
-
-			translate_origin_obj.x = cos(glm::radians(rad_obj)) * drawr_obj;
-			translate_origin_obj.z = sin(glm::radians(rad_obj)) * drawr_obj;
-			
-			translate_origin_glu.x = cos(glm::radians(rad_glu)) * drawr_glu;
-			translate_origin_glu.z = sin(glm::radians(rad_glu)) * drawr_glu;
-			if (rad_glu >= 360.0f * 5) {
-				translate_origin_glu = glm::vec3{ 0.0f };
-				drawr_glu = 0.0f;
-				rad_glu = 0.0f;
-			}
-			if (rad_obj >= 360.0f * 5) {
-				translate_origin_obj = glm::vec3{ 0.0f };
-				drawr_obj = 0.0f;
-				rad_obj = 0.0f;
-			}
-			//translate_origin_obj.x += 0.002f;
-			//rotate.y += 15.0f;
-		}
-	
-
-	}
-	glutPostRedisplay();
-	if (b_animation)
-		glutTimerFunc(100, Timer_circle_spiral, 0);
+		glutTimerFunc(10, Timer_turn_y, 0);
 }
 
 void Timer_circle_spiral_pointnum(int value) {
@@ -824,11 +787,7 @@ void Timer_circle_spiral_pointnum(int value) {
 		glutTimerFunc(10, Timer_circle_spiral_pointnum, 0);
 }
 //--------keyboard----------------------------------------
-//"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
-//"키보드 t: 현재 자리에서 두 도형이 원점으로 이동  제자리로 다시 이동하는 애니메이션",
-//"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션",
-//"키보드 2: 두 도형이 공전하면서 상대방의 자리로 이동하는 애니메이션",
-//"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션", x 축 회전
+
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	std::vector<float> vertex;
 	switch (key)
@@ -868,26 +827,30 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 	case'T':case't': //"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
 		all_animation = 4;
-
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_turn_top, 0);
 		break;
-	case'Y':case'y':// y: y 축에 대하여 자전한다 멈춘다
+
+	case'F':case'f'://  f: 육면체의 앞면을 연다 앞면을 닫는다
 		all_animation = 2;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_y_rotate, 0);
+		glutTimerFunc(10, Timer_turn_face, 0);
 		break;
-	case'1'://"키보드 1: 두 도형이 중심점을 통과하며 상대방의 자리로 이동하는 애니메이션"
+	case'S':case's':// s : 육면체의 옆면을 연다 닫는다
 		all_animation = 1;
-		translate_origin_glu = { 0.0f,0.0f,-0.9f };
-		translate_origin_obj = { 0.0f,0.0f,0.9f };
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_exchange, 0);
+		glutTimerFunc(10, Timer_side_up, 0);
 		break;
-	case'3'://"키보드 3: 두 도형이 한 개는 위로 , 다른 도형은 아래로 이동하면서 상대방의 자리로 이동하는 애니메이션", x 축 회전
-		all_animation = 3;
+	case'B':case'b':// "b: 육면체의 뒷면을 연다 닫는다",
+		all_animation = 5;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_x_rotate, 0);
+		glutTimerFunc(10, Timer_back_scale, 0);
+		break;
+
+	case'Y': case'y':// "b: 육면체의 뒷면을 연다 닫는다",
+		all_animation = 6;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_turn_y, 0);
 		break;
 
 	}
@@ -935,9 +898,9 @@ GLvoid drawScene()
 	//xyz축그리기
 	{
 		glm::mat4 transformMatrix(1.0f);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
+		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f, 10.0f, 10.0f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
@@ -959,36 +922,14 @@ GLvoid drawScene()
 	glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
 		
 	if (t_or_l) {//면으로 출력
-		for (int j = 0; j < m.indexnum; j++) {
-			if (0 <= j && j < 2) {
-				meshface_srt();
-				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));
+		for (int j = 0; j < m.indexnum / 2; j++) { // indexnum = 12;
+			meshface_srt(j);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(j * 6 * sizeof(unsigned int)));
 			}
-			if (2 <= j && j < 4) {
-				meshface_srt();
-				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));
-			}
-			if (4 <= j && j < 6) {
-				meshface_srt();
-				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));
-			}
-			if (6 <= j && j < 8) {
-				meshface_srt();
-				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));
-			}
-			if (8 <= j && j < 10) {
-				meshface_srt();
-				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));
-			}
-			if (10 <= j && j < 12) {// 뚜껑
-				meshface_srt();
-				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));
-			}
-		}
 	}
 	else { //선으로 출력
 		for (int j = 0; j < m.indexnum * 3; j++) {
-			meshface_srt();
+			meshface_srt(j);
 			glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
 		}
 	}
@@ -996,19 +937,23 @@ GLvoid drawScene()
 	glutSwapBuffers();									//--- 화면에 출력하기
 }
 
-void meshface_srt() {
+void meshface_srt(int& i) {
 	glm::mat4 transformMatrix(1.0f);
-	transformMatrix = glm::rotate(transformMatrix, glm::radians(15.0f), x_axis);
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
 
-	transformMatrix = glm::translate(transformMatrix, glm::vec3(m_motin_ch.translate));
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(m_motion_ch[i].translate));
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(m_motion_ch[i].translate_st));
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(m_motion_ch[i].scale));
 
-	transformMatrix = glm::rotate(transformMatrix, glm::radians(m_motin_ch.rad), y_axis);//마우스
-	transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
-	transformMatrix = glm::translate(transformMatrix, zero);
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(m_motion_ch[i].radx), x_axis);
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(m_motion_ch[i].rady), y_axis);
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(m_motion_ch[i].radz), z_axis);
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(m_motion_ch[i].translate_st) * glm::vec3{-1.0f});
+
 	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 }
