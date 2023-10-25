@@ -20,6 +20,7 @@ const std::string Guide[]{
 	"전체 도형의 이동 : 키보드 명령에 따라 y 축을 제외한 x 축과 z 축 , 두 도형을 위 아래로 이동",
 	"h/H: 은면제거 적용/해제",
 	"w/W: 와이어 객체/솔리드 객체",
+	"s/S: 원점에 대축",
 	"---애니메이션 구현---",
 	"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
 	"키보드 t: 현재 자리에서 두 도형이 원점으로 이동 ->  제자리로 다시 이동하는 애니메이션",
@@ -269,6 +270,7 @@ public:
 const glm::vec3 x_axis{ 1.0f,0.0f,0.0f }; //x축
 const glm::vec3 y_axis{ 0.0f,1.0f,0.0f }; //y축
 const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
+glm::vec3 zero_scale{ 0.3f,0.3f,0.3f }; //원점에 대한 신축
 shapecube cube;
 shapep square_horn;
 linexyz xyz;//xyz축 그리기
@@ -286,6 +288,9 @@ float drawr_obj{ 0.0f };
 float drawr_glu{ 0.0f };
 float rad_obj{ 0.0f };
 float rad_glu{ 0.0f };
+float sz_syz = 1.0f;
+float dz = 0.01f;
+int dzz = 1;
 //-----------------------------------------------------------
 glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
 glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
@@ -792,6 +797,35 @@ void Timer_circle_spiral_pointnum(int value) {
 	if (s_circle_spiral.drawpoint < s_circle_spiral.pointnum)
 		glutTimerFunc(10, Timer_circle_spiral_pointnum, 0);
 }
+
+void Timer_zero_scale(int value) {
+	//glm::vec3 zero_scale{ 0.3f,0.3f,0.3f }; //원점에 대한 신축
+	//float sz_syz = 1.0f;
+	//float dz = 0.01f;
+	
+	if (all_animation == 6) {
+		
+	
+		zero_scale.x += dz;
+		zero_scale.y += dz;
+		zero_scale.z += dz;
+
+		if (zero_scale.x > 1.0f) {
+			dz *= -1;
+		}
+		else  if (zero_scale.x < 0.1f) {
+			dz *= -1;
+		}
+
+		dz *= dzz;
+	}
+		
+
+	glutPostRedisplay();
+	if (b_animation)
+		glutTimerFunc(50, Timer_zero_scale, 0);
+}
+
 //--------keyboard----------------------------------------
 //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
 //"키보드 t: 현재 자리에서 두 도형이 원점으로 이동  제자리로 다시 이동하는 애니메이션",
@@ -812,6 +846,12 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 
 	case'Q':case'q':
 		exit(0);
+		break;
+
+	case'S':case's':
+		all_animation = 6;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(50, Timer_zero_scale, 0);
 		break;
 
 	case'P':case'p'://p : 초기 위치로 리셋(자전 애니메이션도 멈추기
@@ -946,6 +986,11 @@ GLvoid drawScene()
 
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+
+		if (all_animation == 6) {
+			transformMatrix = glm::scale(transformMatrix, glm::vec3(zero_scale));
+		}
+		
 		
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
@@ -979,6 +1024,11 @@ GLvoid drawScene()
 
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+
+		if (all_animation == 6) {
+			transformMatrix = glm::scale(transformMatrix, glm::vec3(zero_scale));
+		}
+
 
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
