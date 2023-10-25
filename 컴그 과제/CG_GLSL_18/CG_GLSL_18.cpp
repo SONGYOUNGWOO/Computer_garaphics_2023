@@ -307,7 +307,9 @@ bool t_or_l{ true };//면 또는 선
 bool left_button{ false }; //좌클릭
 bool b_animation{ false };
 int all_animation{ 0 }; // 애니메인션 0:x,1:1, 2:2, 3:3, 4:t, 5:r
-int meshtarget{ 1 };
+int meshtarget{ 1 }; // 1:정육면체 .2:피라미드
+int dx{ 0 }; //음수 양수 바꾸기
+int dy{ 0 }; //면 선택
 //-----------------------------------------------------------
 glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
 glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
@@ -518,10 +520,46 @@ void Timer_back_scale(int value) {
 	if (b_animation && m_motion_ch[0].scale.x > 0.0f)
 		glutTimerFunc(10, Timer_back_scale, 0);
 }
+//----------Timer_pyramid_move_all----------------------------------------------------------------------------------
+void Timer_pyramid_move_all(int value) {
+	if (all_animation == 7) {
+		for (int i = 0; i < 4; ++i) {
+			if (i % 2 == 0) { //0,2
+				m_motion_ch[i].translate_st = { 0.0f, -1.0f, 1.0f * dx };
+				m_motion_ch[i].radx += 1.f * dx;
+				dx *= -1;
+			}
+			else{
+				m_motion_ch[i].translate_st = { 1.0f * -dx, -1.0f, 0.0f };
+				m_motion_ch[i].radz -= 1.f * -dx;
+			}
+		}
+	}
+	glutPostRedisplay();
+	if (b_animation && m_motion_ch[0].radx < 233.0f)
+		glutTimerFunc(10, Timer_pyramid_move_all, 0);
+}
+//----------Timer_pyramid_move_each----------------------------------------------------------------------------------
+void Timer_pyramid_move_each(int value) {
+	if (all_animation == 8) {
+		if (m_motion_ch[dy].radx < 90) { //0,2
+			m_motion_ch[dy].translate_st = { 0.0f, -1.0f, 1.0f * dx };
+			m_motion_ch[dy].radx += 1.0f * dx;
+			dx *= -1;
+		}
+		else {
+			m_motion_ch[dy].translate_st = { 1.0f * -dx, -1.0f, 0.0f };
+			m_motion_ch[dy].radz -= 1.0f * -dx;
+		}
+	}
+	glutPostRedisplay();
+	if (b_animation)
+		glutTimerFunc(10, Timer_pyramid_move_each, 0);
+}
 //----------Timer_turn_y----------------------------------------------------------------------------------
 void Timer_turn_y(int value) {
 	if (all_animation == 6) {
-		
+
 		rotate.y += 0.1f;
 		if (rotate.y >= 360.0f) {
 			rotate.y -= 360.0f;
@@ -562,10 +600,6 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		all_animation = 0;
 		translate_origin_obj = { 0.0f,0.0f,0.0f };
 		break;
-
-	case'R':case'r': //"키보드 r: xz 평면에 스파이럴을 그리고 , 그 스파이럴 위치에 따라 객체 이동 애니메이션",
-
-		break;
 	case'T':case't': //"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
 		all_animation = 4;
 		b_animation = b_animation == true ? false : true;
@@ -592,6 +626,20 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		all_animation = 6;
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_turn_y, 0);
+		break;
+
+	case'O': case'o':// "b: 육면체의 뒷면을 연다 닫는다",
+		all_animation = 7;
+		dx = 1; //방향전환용
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_pyramid_move_all, 0);
+		break;
+
+	case'R':case'r':// "b: 육면체의 뒷면을 연다 닫는다",
+		all_animation = 8;
+		dx = 1; //방향전환용
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_pyramid_move_each, 0);
 		break;
 
 	}
