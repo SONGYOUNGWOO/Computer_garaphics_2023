@@ -9,29 +9,31 @@
 #include <gl/glm/ext.hpp>
 #include <gl/glm/gtc/matrix_transform.hpp>
 #define _CRT_SECURE_NO_WARNINGS //--- 프로그램 맨 앞에 선언할 것r
-//-------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 //glew32.lib freeglut.lib 
-//-------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 const std::string Guide[]{
-	"--------------------------------------------------------------------------------------------------"
-	"각 도형의 이동 : x 축 , y 축 , z 축",
-	"각 도형의 제자리에서 신축 : 확대 , 축소",
-	"각 도형의 원점에 대하여 신축 : 확대 , 축소 원점에 대하여 신축하면 위치도 같이 이동된다",
-	"전체 도형의 이동 : 키보드 명령에 따라 y 축을 제외한 x 축과 z 축 , 두 도형을 위 아래로 이동",
+	"--------------------------------------------------------------------------------------------------",
+	"1: 정육면체",
 	"h/H: 은면제거 적용/해제",
 	"w/W: 와이어 객체/솔리드 객체",
 	"y: y 축에 대하여 자전한다 멈춘다",
 	"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
 	"s: 육면체의 옆면을 연다 닫는다",
 	"b: 육면체의 뒷면을 연다 닫는다",
-
+	"--------------------------------------------------------------------------------------------------",
+	"2: 피라미드",
+	"o: 사각뿔의 모든 면들이 함께 열린다 닫는다 사각뿔의 아래 면을 기준으로 애니메이션으로 열린다 80 도까지 열려서 네 개의 옆면이 아래에서 만난다",
+	"R: 사각뿔의 각 면이 한 개씩 열린다 닫는다 사각뿔의 한 면 씩 번갈아 가며 열린다 .열리는 각도는 평면 까지만(90 도) 열린다",
 	"--------------------------------------------------------------------------------------------------",
 	"p : 초기화 하기",
 	"q : 프로그램 종료",
 	"--------------------------------------------------------------------------------------------------"
 };
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------------------------------
+
 float randomnum(float a, float b) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -45,32 +47,6 @@ int randomnum(int a, int b) {
 	return dis(gen);
 }
 ////-------------------------------------------------------------------------------------------------------------------------
-class linexyz {
-public:
-	glm::vec3 p[6]; // 각 점의 좌표
-	GLuint vao;
-	GLuint vbo[2];
-	std::vector<float> color;
-
-	int* points;
-	//생성자
-	linexyz() {
-		points = new int;
-		vao = 0;
-		vbo[0] = 0;
-		vbo[1] = 0;
-		color.clear();
-
-		for (int i = 0; i < 6; ++i) {
-			p[i] = { 0.0f, 0.0f, 0.0f };
-			p[i][i/2] = (i % 2 == 0 ? -1.0f : 1.0f);
-
-			color.push_back(randomnum(0.0f, 1.0f));
-			color.push_back(randomnum(0.0f, 1.0f));
-			color.push_back(randomnum(0.0f, 1.0f));
-		}
-	}
-};
 //class shapecube {
 //private:
 //	 std::string name;
@@ -258,6 +234,32 @@ public:
 //		
 //	}
 //};
+class linexyz {
+public:
+	glm::vec3 p[6]; // 각 점의 좌표
+	GLuint vao;
+	GLuint vbo[2];
+	std::vector<float> color;
+
+	int* points;
+	//생성자
+	linexyz() {
+		points = new int;
+		vao = 0;
+		vbo[0] = 0;
+		vbo[1] = 0;
+		color.clear();
+
+		for (int i = 0; i < 6; ++i) {
+			p[i] = { 0.0f, 0.0f, 0.0f };
+			p[i][i / 2] = (i % 2 == 0 ? -1.0f : 1.0f);
+
+			color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
+			color.push_back(randomnum(0.0f, 1.0f));
+		}
+	}
+};
 class Mesh {
 public:
 	GLuint vao;
@@ -289,35 +291,28 @@ public:
 		radz = 0.0f;
 	}
 };
-//--- 전역변수 -------------------------------------------------------------------------------------------------------
-//--------------------xyz-----------------------------------------------------------
+//전역변수 ----------------------------------------------------------------------------------------------
+
 const glm::vec3 x_axis{ 1.0f,0.0f,0.0f }; //x축
 const glm::vec3 y_axis{ 0.0f,1.0f,0.0f }; //y축
 const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
-const glm::vec3 zero{ 0.0f,0.0f,0.0f }; //z축
+const glm::vec3 zero{ 0.0f,0.0f,0.0f }; // 원점
 Mesh mcube, mpyramid;
 Mesh_motion_change m_motion_ch[6];
-
-//shapecube cube;
-//shapep square_horn;
 linexyz xyz;//xyz축 그리기
+
 int meshface{ 0 };  //선택한 도형 처음 도형은 정육면체
 bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ true };//면 또는 선
 bool left_button{ false }; //좌클릭
 bool b_animation{ false };
 int all_animation{ 0 }; // 애니메인션 0:x,1:1, 2:2, 3:3, 4:t, 5:r
-
+int meshtarget{ 1 };
 //-----------------------------------------------------------
 glm::vec3 translate_origin_glu{ 0.0f };//glu초기값,0.0f, 0.0f, -0.9f
 glm::vec3 translate_origin_obj{ 0.0f };//obj초기값,0.0f, 0.0f, 0.9f
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
 glm::vec3 rotate{ 0.0f }; // 축을 기준으로 공전 또는 자전
-glm::vec3 turn_top_rotate{ 0.0f }; // 축을 기준으로 공전 또는 자전
-glm::vec3 rotateobjglu{ 0.0f }; // 축을 기준으로 공전 또는 자전
-glm::vec3 rotateobj{ 0.0f }; // 축을 기준으로 공전 또는 자전
-
-//int objglu{ 3 }; // 1 클릭시 glu만 선택 자전
 //-------------------------------------------------------------------------------------------------------
 
 char* filetobuf(const char* file)
@@ -346,7 +341,7 @@ void meshface_srt(int& i);
 
 GLvoid Reshape(int w, int h);
 void getobjfile(Mesh& mesh, const std::string& objname);
-//-------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 void make_vertexShaders()
 {
 	vertexSource = filetobuf("vertex.glsl");					//--- 버텍스 세이더 객체 만들기
@@ -402,8 +397,46 @@ void make_shaderProgram()
 	//return shaderProgramID;
 
 }
-//-------------------------------------------------------------------------------------------------------
+void InitBuffer_line_xyz(linexyz& s) {
+	//버퍼 생성
+	std::vector<float> vertex;
+	std::vector<float> color;
 
+	for (int i = 0; i < 6; ++i)
+	{
+		vertex.push_back(s.p[i].x);
+		vertex.push_back(s.p[i].y);
+		vertex.push_back(s.p[i].z);
+
+		color.push_back(s.color.at(i * 3));		//r
+		color.push_back(s.color.at(i * 3 + 1));	//g
+		color.push_back(s.color.at(i * 3 + 2));	//b
+	}
+
+	//gpu 버퍼에 저장하기
+	{
+		glGenVertexArrays(1, &s.vao); //--- VAO 를 지정하고 할당하기
+		glBindVertexArray(s.vao);		//--- VAO를 바인드하기
+		glGenBuffers(2, s.vbo);		//--- 2개의 VBO를 지정하고 할당하기
+
+		//--- 1번째 VBO를 활성화하여 바인드하고, 버텍스 속성 (좌표값)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[0]);											//--- 변수 diamond 에서 버텍스 데이터 값을 버퍼에 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(GLfloat), vertex.data(), GL_STATIC_DRAW);	//--- triShape 배열의 사이즈: 9 * float
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 좌표값을 attribute 인덱스 0번에 명시한다: 버텍스 당 3* float
+		glEnableVertexAttribArray(0);													//--- attribute 인덱스 0번을 사용가능하게 함
+
+		//--- 2번째 VBO를 활성화 하여 바인드 하고, 버텍스 속성 (색상)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[1]);  										//--- 변수 colors에서 버텍스 색상을 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(GLfloat), color.data(), GL_STATIC_DRAW); 	//--- colors 배열의 사이즈: 9 *float
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 색상값을 attribute 인덱스 1번에 명시한다: 버텍스 당 3*float
+		glEnableVertexAttribArray(1);
+
+	}
+
+	vertex.clear();
+	color.clear();
+}
+//------------------------------------------------------------------------------------------------------
 //----------------Mouse----------------------------------
 void Mouse(int button, int state, int x, int y) {
 
@@ -424,7 +457,6 @@ void Mouse(int button, int state, int x, int y) {
 
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
-
 //----------Motion----------------------------------------
 void Motion(int x, int y) {
 	float mx = (x - 800 / 2.0f) / (800 / 2.0f);
@@ -437,38 +469,31 @@ void Motion(int x, int y) {
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
 
-//----------Timer_turn_top-------------------------------------------------------------------------------------
+//----------Timer_turn_top--------------------------------------------------------------------------------
 void Timer_turn_top(int value) {
 	if (all_animation == 4) {
 		m_motion_ch[5].translate_st = { 0.0f,1.0f,0.0f };
 		m_motion_ch[5].radx += 1.0f;
-
-
 		if (m_motion_ch[5].radx >= 360.0f) {
 			m_motion_ch[5].radx -= 360.0f;
 		}
-		std::cout << "m_motion_ch[5].radx: " << m_motion_ch[5].radx << "\n";
 	}
 	glutPostRedisplay();
 	if (b_animation)
 		glutTimerFunc(10, Timer_turn_top, 0);
 }
-//----------Timer_turn_face-------------------------------------------------------------------------------------
+//----------Timer_turn_face-------------------------------------------------------------------------------
 void Timer_turn_face(int value) {
 	if (all_animation == 2) {
 		m_motion_ch[2].translate_st = { 0.0f,-1.0f, -1.0f };
 		m_motion_ch[2].radx -= 1.0f;
-
-		//if (m_motion_ch[2].radx <= -90.0f) {
-		//	m_motion_ch[2].radx += 90.0f;
-		//}
 	}
 
 	glutPostRedisplay();
 	if (b_animation && m_motion_ch[2].radx > -90.0f)
 		glutTimerFunc(10, Timer_turn_face, 0);
 }
-//----------Timer_y_rotate-------------------------------------------------------------------------------------
+//----------Timer_y_rotate--------------------------------------------------------------------------------
 void Timer_side_up(int value) {
 	if (all_animation == 1) {
 		m_motion_ch[1].translate_st = { 0.0f,-1.0f, 0.0f };
@@ -480,7 +505,7 @@ void Timer_side_up(int value) {
 	if (b_animation && m_motion_ch[1].translate.y < 2.0f)
 		glutTimerFunc(10, Timer_side_up, 0);
 }
-//----------Timer_back_scale------------------------------------------------------------------------------------
+//----------Timer_back_scale------------------------------------------------------------------------------
 void Timer_back_scale(int value) {
 	if (all_animation == 5) {
 		m_motion_ch[0].translate_st = { 0.0f,0.0f, 1.0f };
@@ -493,7 +518,7 @@ void Timer_back_scale(int value) {
 	if (b_animation && m_motion_ch[0].scale.x > 0.0f)
 		glutTimerFunc(10, Timer_back_scale, 0);
 }
-//----------Timer_turn_y------------------------------------------------------------------------------------
+//----------Timer_turn_y----------------------------------------------------------------------------------
 void Timer_turn_y(int value) {
 	if (all_animation == 6) {
 		
@@ -508,7 +533,6 @@ void Timer_turn_y(int value) {
 }
 
 //--------keyboard----------------------------------------
-
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	std::vector<float> vertex;
 	switch (key)
@@ -524,15 +548,17 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case'Q':case'q':
 		exit(0);
 		break;
+	case'1':
+		meshtarget = 1;
+		break;
+	case'2':
+		meshtarget = 2;
+		break;
 
 	case'P':case'p'://p : 초기 위치로 리셋(자전 애니메이션도 멈추기
 		rotate.x = 0.0f;
 		rotate.y = 0.0f;
 		degree = 0.0f;
-		rotateobj.x = 0.0f;
-		rotateobj.y = 0.0f;
-		rotateobjglu.x = 0.0f;
-		rotateobjglu.y = 0.0f;
 		all_animation = 0;
 		translate_origin_obj = { 0.0f,0.0f,0.0f };
 		break;
@@ -596,13 +622,11 @@ GLvoid specialkeyborad(int key, int x, int y) {
 	glutPostRedisplay();
 }
 
-
-
-// ---- 그리기 콜백 함수---------------------------------------------------------------------------------------------------
+// ---- 그리기 콜백 함수------------------------------------------------------------------------------------
 GLvoid drawScene()
 {
-	//glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);			//--- 변경된 배경색 설정 
+	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);			//--- 변경된 배경색 설정 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 	glUseProgram(shaderProgramID);						//--- 렌더링 파이프라인에 세이더 불러오기
 	//xyz축그리기
@@ -610,7 +634,6 @@ GLvoid drawScene()
 		glm::mat4 transformMatrix(1.0f);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f, 10.0f, 10.0f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
@@ -619,6 +642,7 @@ GLvoid drawScene()
 		glLineWidth(4);
 		glDrawArrays(GL_LINES, 0, 6);
 	}
+
 	if (DEPTH_T) {
 		glEnable(GL_DEPTH_TEST);
 	}
@@ -627,20 +651,37 @@ GLvoid drawScene()
 	}
 
 	//정육면체
-	
-	Mesh& m = mcube;
-	glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
-		
-	if (t_or_l) {//면으로 출력
-		for (int j = 0; j < m.indexnum / 2; j++) { // indexnum = 12;
-			meshface_srt(j);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(j * 6 * sizeof(unsigned int)));
+	if (meshtarget == 1) {
+		Mesh& m = mcube;
+		glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
+		if (t_or_l) {//면으로 출력
+			for (int j = 0; j < m.indexnum / 2; j++) { // indexnum = 12;
+				meshface_srt(j);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(j * 6 * sizeof(unsigned int)));
 			}
+		}
+		else { //선으로 출력
+			for (int j = 0; j < m.indexnum * 3; j++) {
+				meshface_srt(j);
+				glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
+			}
+		}
 	}
-	else { //선으로 출력
-		for (int j = 0; j < m.indexnum * 3; j++) {
-			meshface_srt(j);
-			glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
+	else {
+		//피라미드
+		Mesh& p = mpyramid;
+		glBindVertexArray(p.vao);								//--- 사용할 VAO 불러오기
+		if (t_or_l) {//면으로 출력
+			for (int j = 0; j < p.indexnum; j++) { // indexnum = 12;
+				meshface_srt(j);
+				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));
+			}
+		}
+		else { //선으로 출력
+			for (int j = 0; j < p.indexnum * 3; j++) {
+				meshface_srt(j);
+				glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (void*)(j * 3 * sizeof(unsigned int)));	//큐브 1면 출력
+			}
 		}
 	}
 
@@ -670,6 +711,7 @@ void meshface_srt(int& i) {
 
 
 void reset() {
+	InitBuffer_line_xyz(xyz);
 }
 //--- 다시그리기 콜백 함수
 GLvoid Reshape(int w, int h)
@@ -715,8 +757,8 @@ void ReadObj(Mesh& mesh, FILE* path) {
 			color[vertIndex].x = vertIndex % 2 == 0 ? 0.0f : 1.0f;
 			color[vertIndex].y = (vertIndex/2) % 2 == 0 ? 0.0f : 1.0f;
 			color[vertIndex].z = (vertIndex/4) % 2 == 0 ? 0.0f : 1.0f;
-			std::cout << "vertex[" << vertIndex << "] : {" << vertex[vertIndex].x << ", " << vertex[vertIndex].y << ", " << vertex[vertIndex].z << "}" << '\n';
-			std::cout << "color[" << vertIndex << "] : {" << color[vertIndex].x << ", " << color[vertIndex].y << ", " << color[vertIndex].z << "}" << '\n';
+			/*std::cout << "vertex[" << vertIndex << "] : {" << vertex[vertIndex].x << ", " << vertex[vertIndex].y << ", " << vertex[vertIndex].z << "}" << '\n';
+			std::cout << "color[" << vertIndex << "] : {" << color[vertIndex].x << ", " << color[vertIndex].y << ", " << color[vertIndex].z << "}" << '\n';*/
 			vertIndex++;
 		}
 		else if (bind[0] == 'f' && bind[1] == '\0') {
@@ -736,7 +778,7 @@ void ReadObj(Mesh& mesh, FILE* path) {
 			//uv[faceIndex].x = temp_normal[0];
 			//uv[faceIndex].y = temp_normal[1];
 			//uv[faceIndex].z = temp_normal[2];
-			std::cout << "face[" << faceIndex << "] : {" << face[faceIndex].x << ", " << face[faceIndex].y << ", " << face[faceIndex].z << "}" << '\n';
+			/*std::cout << "face[" << faceIndex << "] : {" << face[faceIndex].x << ", " << face[faceIndex].y << ", " << face[faceIndex].z << "}" << '\n';*/
 			faceIndex++;
 		}
 		//else if (bind[0] == 'v' && bind[1] == 't' && bind[2] == '\0') {
