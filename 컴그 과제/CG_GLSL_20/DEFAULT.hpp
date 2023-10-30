@@ -20,6 +20,12 @@ const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z√‡
 const glm::vec3 zero{ 0.0f,0.0f,0.0f }; // ø¯¡°
 
 GLvoid drawScene();
+void viewTransform();
+void projectTransform_choice();
+void depth_choice();
+void draw_coordinate_axis();
+void draw_floor();
+void draw_object();
 GLvoid Reshape(int w, int h);
 GLvoid Mouse(int button, int state, int x, int y);
 GLvoid Motion(int x, int y);

@@ -20,11 +20,12 @@ const std::string Guide[]{
 	"a/A: r 명령어와 같이 화면의 중심의 축에 대하여 카메라가 회전하는 애니메이션을 진행한다 멈춘다",
 	"--------------------------------------------------------------------------------------------------",
 	"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
-	"t/T: 직각 투영/원근 투영",
 	"m/M: 솔리드 모델/와이어 모델",
 	"w/a/s/d: 위의 도형들을 좌/우/상/하로 이동 (x축과 y축 값 이동 – 객체 이동)",
 	"+/-: 위의 도형들을 앞/뒤로 이동 (z축 값 이동 – 객체 이동)",
 	"--------------------------------------------------------------------------------------------------",
+	"1: 직각 투영/원근 투영",
+	"2: 은면제거 적용/해제",
 	"s/S: 모든 움직임 멈추기",
 	"p : 초기화 하기",
 	"q : 프로그램 종료",
@@ -43,22 +44,7 @@ int randomnum(int a, int b) {
 	std::uniform_int_distribution dis(a, b);
 	return dis(gen);
 }
-
-class Mesh {
-public:
-	GLuint vao;
-	GLuint vbo[2];
-	GLuint ebo;
-	GLuint indexnum;
-	Mesh() {
-		vao = 0;
-		vbo[0] = 0;
-		vbo[1] = 0;
-		ebo = 0;
-		indexnum = 0;
-	}
-};;
-class linexyz {
+class Linexyz {//xyz축 그리기
 public:
 	glm::vec3 p[6]; // 각 점의 좌표
 	GLuint vao;
@@ -66,8 +52,8 @@ public:
 	std::vector<float> color;
 
 	int* points;
-	//생성자
-	linexyz() {
+	
+	Linexyz() {//생성자
 		points = new int;
 		vao = 0;
 		vbo[0] = 0;
@@ -84,127 +70,151 @@ public:
 		}
 	}
 };
-class Circle_Mesh {
+class Mesh {
 public:
 	GLuint vao;
 	GLuint vbo[2];
+	GLuint ebo;
 	GLuint indexnum;
-	Circle_Mesh() {
+	Mesh() {
 		vao = 0;
 		vbo[0] = 0;
 		vbo[1] = 0;
+		ebo = 0;
 		indexnum = 0;
 	}
 };
+class Floor_Mesh { //바닥
+public:
+	GLuint vao;
+	GLuint vbo[2];
+	GLuint ebo;
+	GLuint indexnum;
+	Floor_Mesh() {
+		vao = 0;
+		vbo[0] = 0;
+		vbo[1] = 0;
+		ebo = 0;
+		indexnum = 0;
+	}
+}; 
 class Object {
 public:
 	float speed;
-	// after 이동
-	glm::vec3 after_transalte;
-	// 공전
-	glm::vec3 rotate_after;
-	// 반지름
-	glm::vec3 translate;
-	// 자전
-	glm::vec3 rotate;
-	glm::vec3 scale;
+	
+	glm::vec3 after_translate;// after 이동
+	glm::vec3 after_rotate;//  after 공전
+	glm::vec3 after_scale;//  after 공전
+	
+	glm::vec3 translate;// 위치
+	glm::vec3 rotate;// 자전
+	glm::vec3 scale; // 크기
 
 	Object() {
-		rotate_after = { 0.0f,0.0f,0.0f };
+		after_translate = { 0.0f,0.0f,0.0f };
+		after_rotate = { 0.0f,0.0f,0.0f };
+		after_scale = { 1.0f,1.0f,1.0f };
 		translate = { 0.0f,0.0f,0.0f };
 		rotate = { 0.0f,0.0f,0.0f };
 		scale = { 1.0f,1.0f,1.0f };
-		after_transalte = { 0.0f,0.0f,0.0f };
-		speed = { 10.0f };
 	}
 
 	void reset() {
-		rotate_after = { 0.0f,0.0f,0.0f };
-		translate = { 0.0f,0.0f,0.0f };
-		rotate = { 0.0f,0.0f,0.0f };
-		scale = { 1.0f,1.0f,1.0f };
-		after_transalte = { 0.0f,0.0f,0.0f };
+		Object::Object();
 	}
 
-	void setRadius(const float& radius = 5.0f) {
-		translate.x = radius;
+	void setlocation(const float& x, const float& y, const float& z) {
+		translate.x = x;
+		translate.y = y;
+		translate.z = z;
 	}
 
-	void setScale(const glm::vec3&);
+	void setScale(const float& x, const float& y, const float& z);
 
-	// y축으로 공전시키는 함수
-	void Y_orbit(const float&);
-	// y축으로 자전시키는 함수
-	void Y_spin(const float&);
-	// z축으로 공전궤도 수정
-	void set_Z_spin(const float& degree);
-	// z축으로 공전
-	void Z_spin(const float& degree = 3.0f);
-	// 이동
-	void go_trans(const float& x, const float& y, const float& z);
+	void afterScale(const float& x, const float& y, const float& z);
 
+	void Y_spin(const float&);// y축으로 자전시키는 함수
+	
+	void X_spin(const float&); // z축으로 자전시키는 함수
+	
+	void go_trans(const float& x, const float& y, const float& z);// 이동
+
+	void aftertranslate(const float& x, const float& y, const float& z);
 
 	void setWorldTransform(glm::mat4& transformMatrix) const;
 
+	void trans_after_translate(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::translate(transformMatrix, after_translate);
+	}
+
+	void trans_after_rotate(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(after_rotate.z), z_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(after_rotate.y), y_axis);
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(after_rotate.x), x_axis);
+	}
+	void trans_after_scale(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::scale(transformMatrix, after_scale);
+	}
+
 	void trans_translate(glm::mat4& transformMatrix) const {
 		transformMatrix = glm::translate(transformMatrix, translate);
-	}
-	void trans_scale(glm::mat4& transformMatrix) const {
-		transformMatrix = glm::scale(transformMatrix, scale);
 	}
 	void trans_rotate(glm::mat4& transformMatrix) const {
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.z), z_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
 	}
-	void trans_after_rotate(glm::mat4& transformMatrix) const {
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate_after.z), z_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate_after.y), y_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate_after.x), x_axis);
-	}
-	void trans_after_translate(glm::mat4& transformMatrix) const {
-		transformMatrix = glm::translate(transformMatrix, after_transalte);
+	void trans_scale(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::scale(transformMatrix, scale);
 	}
 };
-void Object::Y_orbit(const float& dgree) {
-	rotate_after.y += dgree;
+void Object::X_spin(const float& degree) {
+	rotate.x += degree;
 
 	//각도 범위 유지
-	while (rotate_after.y > 360.0f) rotate_after.y -= 360.0f;
-	while (rotate_after.y < 0.0f) rotate_after.y += 360.0f;
-}
-void Object::Z_spin(const float& degree) {
-	rotate_after.z += degree;
+	while (rotate.x > 180.0f) rotate.x -= 0.0f;
+	while (rotate.x < -180.0f) rotate.x += 0.0f;
+	
 
-	//각도 범위 유지
-	while (rotate_after.z > 360.0f) rotate_after.z -= 360.0f;
-	while (rotate_after.z < 0.0f) rotate_after.z += 360.0f;
-}
-void Object::set_Z_spin(const float& degree) {
-	rotate_after.z = degree;
 }
 void Object::Y_spin(const float& degree) {
-	rotate_after.y += degree;
+	after_rotate.y += degree;
 
 	//각도 범위 유지
 	while (rotate.y > 360.0f) rotate.y -= 360.0f;
 	while (rotate.y < 0.0f) rotate.y += 360.0f;
 }
-void Object::setScale(const glm::vec3& vector) {
-	scale = vector;
+
+void Object::setScale(const float& x, const float& y, const float& z) {
+	scale.x = x;
+	scale.y = y;
+	scale.z = z;
+}
+void Object::afterScale(const float& x, const float& y, const float& z) {
+	after_scale.x = x;
+	after_scale.y = y;
+	after_scale.z = z;
+}
+void Object::aftertranslate(const float& x, const float& y, const float& z) {
+	after_translate.x += x;
+	after_translate.y += y;
+	after_translate.z += z;
 }
 void Object::go_trans(const float& x, const float& y, const float& z) {
-	after_transalte.x += x;
-	after_transalte.y += y;
-	after_transalte.z += z;
+	translate.x += x;
+	translate.y += y;
+	translate.z += z;
 }
+
+
+Object Square_bottom, Square_top, Square_bottom_barrel[2], Square_top_barrel[2], All, Mid, Bottom, Bottom_barrel[2], Top_barrel[2];
 Mesh mcube, mpyramid;
-linexyz xyz;//xyz축 그리기
-Circle_Mesh circle;
+Linexyz line;
+Floor_Mesh floor_b;
+
 void make_shaderProgram();
 void getobjfile(Mesh& mesh, const std::string& objname);
 void reset();
-void Timer_start(int value);
 //------------------------------------------------------------------------------------------------------
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
@@ -232,7 +242,6 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설�
 		std::cout << s << '\n';
 	}
 
-	glutTimerFunc(30, Timer_start, 0);
 
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(Reshape);
@@ -440,7 +449,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설�
 
 //------------------------------------------------------------------------------------------------------
 bool DEPTH_T{ true }; // 은면제거
-static glm::vec3 cameraPos{ 1.0f }, cameraDirection{ zero }, cameraUp{ y_axis };
+static glm::vec3 cameraPos = glm::vec3{0.0f, 1.0f, 1.0f }, cameraDirection{ zero }, cameraUp{ y_axis };
 bool t_or_l{ true };//면 또는 선
 bool left_button{ false }; //좌클릭
 int mouse_x{ 0 }, mouse_y{ 0 }; // 마우스 좌표
@@ -449,10 +458,8 @@ bool ortho{ false }; // 투영변환
 int all_animation{ 0 }; // 애니메인션 0:x,1:1, 2:2, 3:3, 4:t, 5:r
 int obj_style{ 1 }; // 1: GLU_LINE, 2:GLU_FILL
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
+
 //-------------------------------------------------------------------------------------------------------
-Object star;	
-Object planet[3];	
-Object satellite[3];	
 
 char* filetobuf(const char* file)
 {
@@ -479,15 +486,13 @@ void setColor(const glm::vec3& color) {
 	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "ucolor");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 	glUniform3fv(modelLocation, 1, &color[0]);		//--- modelTransform 변수에 변환 값 적용하기
 }
-
-// true: 정점 색상, false: 내가 넣은 색상
-void Color_option(const bool& vertex_color) {
+void Color_option(const bool& vertex_color) {// true: 정점 색상, false: 내가 넣은 색상
 	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "usev_color");
 	glUniform1i(modelLocation, vertex_color);		
 }
 
 //------------------------------------------------------------------------------------------------------
-void make_vertexShaders()
+void make_vertexShaders()//--- 프래그먼트 세이더 객체 만들기
 {
 	vertexSource = filetobuf("vertex.glsl");					//--- 버텍스 세이더 객체 만들기
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);			//--- 세이더 코드를 세이더 객체에 넣기
@@ -503,7 +508,6 @@ void make_vertexShaders()
 		return;
 	}
 }
-//--- 프래그먼트 세이더 객체 만들기
 void make_fragmentShaders()
 {
 	fragmentSource = filetobuf("fragment.glsl");					//--- 프래그먼트 세이더 객체 만들기
@@ -520,8 +524,7 @@ void make_fragmentShaders()
 		return;
 	}
 }
-//--- 버퍼 생성하고 데이터 받아오기
-void make_shaderProgram()
+void make_shaderProgram()//--- 버퍼 생성하고 데이터 받아오기
 {
 
 	make_vertexShaders();
@@ -541,86 +544,6 @@ void make_shaderProgram()
 	glUseProgram(shaderProgramID);
 	//return shaderProgramID;
 
-}
-void InitBuffer_line_xyz(linexyz& s) {
-	//버퍼 생성
-	std::vector<float> vertex;
-	std::vector<float> color;
-
-	for (int i = 0; i < 6; ++i)
-	{
-		vertex.push_back(s.p[i].x);
-		vertex.push_back(s.p[i].y);
-		vertex.push_back(s.p[i].z);
-
-		color.push_back(s.color.at(i * 3));		//r
-		color.push_back(s.color.at(i * 3 + 1));	//g
-		color.push_back(s.color.at(i * 3 + 2));	//b
-	}
-
-	//gpu 버퍼에 저장하기
-	{
-		glGenVertexArrays(1, &s.vao); //--- VAO 를 지정하고 할당하기
-		glBindVertexArray(s.vao);		//--- VAO를 바인드하기
-		glGenBuffers(2, s.vbo);		//--- 2개의 VBO를 지정하고 할당하기
-
-		//--- 1번째 VBO를 활성화하여 바인드하고, 버텍스 속성 (좌표값)을 저장
-		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[0]);											//--- 변수 diamond 에서 버텍스 데이터 값을 버퍼에 복사한다.
-		glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(GLfloat), vertex.data(), GL_STATIC_DRAW);	//--- triShape 배열의 사이즈: 9 * float
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 좌표값을 attribute 인덱스 0번에 명시한다: 버텍스 당 3* float
-		glEnableVertexAttribArray(0);													//--- attribute 인덱스 0번을 사용가능하게 함
-
-		//--- 2번째 VBO를 활성화 하여 바인드 하고, 버텍스 속성 (색상)을 저장
-		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[1]);  										//--- 변수 colors에서 버텍스 색상을 복사한다.
-		glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(GLfloat), color.data(), GL_STATIC_DRAW); 	//--- colors 배열의 사이즈: 9 *float
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 색상값을 attribute 인덱스 1번에 명시한다: 버텍스 당 3*float
-		glEnableVertexAttribArray(1);
-
-	}
-
-	vertex.clear();
-	color.clear();
-}
-void InitBuffer_circle(Circle_Mesh& c) {
-	//버퍼 생성
-	std::vector<float> vertex;
-	std::vector<float> color;
-	float degree{};
-	while (degree < 360) {
-		vertex.push_back(cos(glm::radians(degree)));
-		vertex.push_back(0.0f);
-		vertex.push_back(sin(glm::radians(degree)));
-
-		//검은색
-		color.push_back(0.0f);	//r
-		color.push_back(0.0f);	//g
-		color.push_back(0.0f);	//b
-		degree += 1.0f;
-	}
-	
-
-	//gpu 버퍼에 저장하기
-	{
-		glGenVertexArrays(1, &c.vao); //--- VAO 를 지정하고 할당하기
-		glBindVertexArray(c.vao);		//--- VAO를 바인드하기
-		glGenBuffers(2, c.vbo);		//--- 2개의 VBO를 지정하고 할당하기
-
-		//--- 1번째 VBO를 활성화하여 바인드하고, 버텍스 속성 (좌표값)을 저장
-		glBindBuffer(GL_ARRAY_BUFFER, c.vbo[0]);											//--- 변수 diamond 에서 버텍스 데이터 값을 버퍼에 복사한다.
-		glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(GLfloat), vertex.data(), GL_STATIC_DRAW);	//--- triShape 배열의 사이즈: 9 * float
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 좌표값을 attribute 인덱스 0번에 명시한다: 버텍스 당 3* float
-		glEnableVertexAttribArray(0);													//--- attribute 인덱스 0번을 사용가능하게 함
-
-		//--- 2번째 VBO를 활성화 하여 바인드 하고, 버텍스 속성 (색상)을 저장
-		glBindBuffer(GL_ARRAY_BUFFER, c.vbo[1]);  										//--- 변수 colors에서 버텍스 색상을 복사한다.
-		glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(GLfloat), color.data(), GL_STATIC_DRAW); 	//--- colors 배열의 사이즈: 9 *float
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 색상값을 attribute 인덱스 1번에 명시한다: 버텍스 당 3*float
-		glEnableVertexAttribArray(1);
-
-	}
-	c.indexnum = vertex.size() / 3;
-	vertex.clear();
-	color.clear();
 }
 //------------------------------------------------------------------------------------------------------
 //----------------Mouse----------------------------------
@@ -644,7 +567,6 @@ GLvoid Mouse(int button, int state, int x, int y) {
 
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
-//----------Motion----------------------------------------
 GLvoid Motion(int x, int y) {
 	//중앙값
 	float mx = (x - 800 / 2.0f) / (800 / 2.0f);
@@ -668,72 +590,70 @@ GLvoid Motion(int x, int y) {
 
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
-//----------Timer_W--------------------------------------------------------------------------------
-int keyboard_wasd{ 0 };//1:W,2:a,3:s,4:d
-int y_ratate{ 1 }, z_ratate{ 1 };
-bool yz_switch{ false };//true:y_spin
+float zoom{ 10.0f };//zoom > 0, 크면 더 뒤로감
+GLvoid handleMouseWheel(int wheel, int direction, int x, int y) {
+	//wheel : 마우스 휠의 상태(눌려져있을때 1, 아님 0)
+	//direction: 휠의 돌아간 방향 (1: 앞으로, -1: 뒤로, 0: 휠 가만히)
+	//x,y : 마우스 위치
+	if (direction < 0) {	//휠을 아래로 돌림
+		zoom += 1.0f;
+	}
+	else if (direction > 0) {	//휠을 위로 돌림
+		zoom -= 1.0f;
+		if (zoom < 0.0f) {
+			zoom += 1.0f;
+		}
+	}
+	glutPostRedisplay(); // 화면 다시 그리기 요청
+}
+
+//----------------Timer-----------------------------------
+int b_keyboard;
 void Timer_after_trans(int value) {
-	const int W{ 1 };
-	const int A{ 2 };
-	const int S{ 3 };
-	const int D{ 4 };
-	const int zup{ 5 };
-	const int zdown{ 6 };
-	switch (keyboard_wasd){ 
-	case W:
-		star.go_trans(0.0f, 0.1f, 0.0f);
-		for (Object& o : planet) {
-			o.go_trans(0.0f, 0.1f, 0.0f);
-		}
-		for (Object& o : satellite) {
-			o.go_trans(0.0f, 0.1f, 0.0f);
-
+	int neg{ 1 };//방향
+	const int B{ 1 };
+	const int b{ 2 };
+	const int M{ 3 };
+	const int m{ 4 };
+	const int F{ 5 };
+	const int f{ 6 };
+	const int T{ 7 };
+	const int t{ 8 };
+	switch (b_keyboard){
+	case B://"b/B: 크레인의 아래 몸체가 x 축 방향으로 양 음 방향으로 이동한다 . 다시 누르면 멈춘다",
+		All.aftertranslate(0.1f, 0.0f,0.0f);
+		break;
+	case b:
+		All.aftertranslate(-0.1f, 0.0f, 0.0f);
+		break;
+	case M://"m/M: 크레인의 중앙 몸체가 y 축에 대하여 양 음 방향으로 회전한다 . 다시 누르면 멈춘다",
+		Mid.Y_spin(1.0f);
+		break;
+	case m:
+		Mid.Y_spin(-1.0f);
+		break;
+	case F://"f/F: 포신이 y 축에 대하여 양 음 방향으로 회전하는데 , 두 포신이 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
+		for (int i = 0; i < 2; ++i) {
+			Bottom_barrel[i].Y_spin(1.0f * neg);
+			neg *= -1;
 		}
 		break;
-	case A:
-		star.go_trans(-0.1f, 0.0f, 0.0f);
-		for (Object& o : planet) {
-			o.go_trans(-0.1f, 0.0f, 0.0f);
-		}
-		for (Object& o : satellite) {
-			o.go_trans(-0.1f, 0.0f, 0.0f);
-
+	case f:
+		for (int i = 0; i < 2; ++i) {
+			Bottom_barrel[i].Y_spin(1.0f * -neg);
+			neg *= -1;
 		}
 		break;
-	case S:
-		star.go_trans(0.0f, -0.1f, 0.0f);
-		for (Object& o : planet) {
-			o.go_trans(0.0f, -0.1f, 0.0f);
-		}
-		for (Object& o : satellite) {
-			o.go_trans(0.0f, -0.1f, 0.0f);
+	case T://"t/T : 크레인의 맨 위 2 개의 팔이 x 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
+		for (int i = 0; i < 2; ++i) {
+			Top_barrel[i].X_spin(1.0f * -neg);
+			neg *= -1;
 		}
 		break;
-	case D:
-		star.go_trans(0.1f, 0.0f, 0.0f);
-		for (Object& o : planet) {
-			o.go_trans(0.1f, 0.0f, 0.0f);
-		}
-		for (Object& o : satellite) {
-			o.go_trans(0.1f, 0.0f, 0.0f);
-		}
-		break;
-	case zup:
-		star.go_trans(0.0f, 0.0f, 0.1f);
-		for (Object& o : planet) {
-			o.go_trans(0.0f, 0.0f, 0.1f);
-		}
-		for (Object& o : satellite) {
-			o.go_trans(0.0f, 0.0f, 0.1f);
-		}
-		break;
-	case zdown:
-		star.go_trans(0.0f, 0.0f, -0.1f);
-		for (Object& o : planet) {
-			o.go_trans(0.0f, 0.0f, -0.1f);
-		}
-		for (Object& o : satellite) {
-			o.go_trans(0.0f, 0.0f, -0.1f);
+	case t:
+		for (int i = 0; i < 2; ++i) {
+			Top_barrel[i].X_spin(1.0f * neg);
+			neg *= -1;
 		}
 		break;
 	}
@@ -742,97 +662,95 @@ void Timer_after_trans(int value) {
 	if (b_animation)
 		glutTimerFunc(10, Timer_after_trans, 0);
 }
-//----------Timer_yz_rotate------------------------------------------------------------------------------
-void Timer_yz_rotate(int value) {
 
-	if (yz_switch) {
-		star.Y_spin(3.0f * y_ratate);
-		for (Object& o : planet) {
-			o.Y_spin(3.0f * y_ratate);
-		}
-		for (Object& o : satellite) {
-			o.Y_spin(3.0f * y_ratate);
-		}
-		glutPostRedisplay();
-	}
-	else {
-		star.Z_spin(3.0f * z_ratate);
-		for (Object& o : planet) {
-			o.Z_spin(3.0f * z_ratate);
-		}
-		for (Object& o : satellite) {
-			o.Z_spin(3.0f * z_ratate);
-		}
-		glutPostRedisplay();
-	}
-	if(b_animation)
-		glutTimerFunc(10, Timer_yz_rotate, 0);
-}
-//----------Timer_start------------------------------------------------------------------------------
-void Timer_start(int value) {
-	if (!yz_switch) {
-		star.Y_orbit(3.0f);
-		for (Object& o : planet) {
-			o.Y_orbit(o.speed);
-		}
-		for (Object& o : satellite) {
-			o.Y_orbit(o.speed);
-		}
-	}
-	glutPostRedisplay();
-	
-	glutTimerFunc(30, Timer_start, 0);
-}
-
-//"p/P: 직각 투영/원근 투영",
+//"--------------------------------------------------------------------------------------------------",
+//"e/E: 2 개 포신이 조금씩 이동해서 한 개가 된다 다시 제자리로 이동해서 2 개가 된다",
+//"--------------------------------------------------------------------------------------------------",
+//"카메라 변환",
+//"z/Z: 카메라가 z 축 양 음 방향으로 이동",
+//"x/X: 카메라가 x 축 양 음 방향으로 이동",
+//"y/Y: 카메라 기준 y 축에 대하여 회전",
+//"r/R: 화면의 중심의 y 축에 대하여 카메라가 회전 중점에 대하여 공전",
+//"a/A: r 명령어와 같이 화면의 중심의 축에 대하여 카메라가 회전하는 애니메이션을 진행한다 멈춘다",
+//"--------------------------------------------------------------------------------------------------",
+//"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
+//"t/T: 직각 투영/원근 투영",
 //"m/M: 솔리드 모델/와이어 모델",
 //"w/a/s/d: 위의 도형들을 좌/우/상/하로 이동 (x축과 y축 값 이동 – 객체 이동)",
 //"+/-: 위의 도형들을 앞/뒤로 이동 (z축 값 이동 – 객체 이동)",
-//"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
-//"z/Z: 중심의 구를 제외하고 행성, 달, 궤도가 z축에 대하여 양/음 방향으로 일제히 회전",
+//"--------------------------------------------------------------------------------------------------",
+//"s/S: 모든 움직임 멈추기",
+//"p : 초기화 하기",
+//"q : 프로그램 종료",
+//"--------------------------------------------------------------------------------------------------"
 //--------keyboard----------------------------------------
 GLvoid Keyboard(unsigned char key, int x, int y) {
+	//빨강:x, 가로, 파랑:z,세로
 	std::vector<float> vertex;
 	switch (key)
 	{
 	case'Q':case'q':
 		exit(0);
 		break;
-	case'P':case'p'://"p : 초기화 하기",
-		exit(0);
-		break;
-	case'H':case'h'://h: 은면제거 적용/해제
+	case'2'://2: 은면제거 적용/해제
 		DEPTH_T = DEPTH_T == true ? false : true;
 		break;
-	case't':case'T'://"p/P: 직각 투영/원근 투영",
+	case'1'://"1: 직각 투영/원근 투영",
 		ortho = ortho == true ? false : true;
+		break;;
+	case'B'://"b/B: 크레인의 아래 몸체가 x 축 방향으로 양 음 방향으로 이동한다 . 다시 누르면 멈춘다",
+		b_keyboard = 1;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
 		break;
-	case'M':case'm'://"m/M: 솔리드 모델/와이어 모델",
-		obj_style = obj_style == 1 ? 2 : 1;
+	case'b':
+		b_keyboard = 2;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
 		break;
-	case'w':case'W'://"w/a/s/d: 위의 도형들을 좌/우/상/하로 이동 (x축과 y축 값 이동 – 객체 이동)",
-		keyboard_wasd = 1;
-		if (!b_animation) {
-			b_animation = true;
-			glutTimerFunc(10, Timer_after_trans, 0);
-		}
+	case'M'://"m/M: 크레인의 중앙 몸체가 y 축에 대하여 양 음 방향으로 회전한다 . 다시 누르면 멈춘다",
+		b_keyboard = 3;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
 		break;
+	case'm':
+		b_keyboard = 4;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
+		break;
+	case'F'://"f/F: 포신이 y 축에 대하여 양 음 방향으로 회전하는데 , 두 포신이 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
+		b_keyboard = 5;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
+		break;
+	case'f':
+		b_keyboard = 6;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
+		break;
+	case'T'://"t/T : 크레인의 맨 위 2 개의 팔이 z 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
+		b_keyboard = 7;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
+		break;
+	case't':
+		b_keyboard = 8;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
+
 	case'a':case'A':
-		keyboard_wasd = 2;
 		if (!b_animation) {
 			b_animation = true;
 			glutTimerFunc(10, Timer_after_trans, 0);
 		}
 		break;
 	case's':case'S': 
-		keyboard_wasd = 3;
 		if (!b_animation) {
 			b_animation = true;
 			glutTimerFunc(10, Timer_after_trans, 0);
 		}
 		break;
 	case'd':case'D':
-		keyboard_wasd = 4;
 		if (!b_animation) {
 			b_animation = true;
 			glutTimerFunc(10, Timer_after_trans, 0);
@@ -840,31 +758,23 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case'Y':case'y'://"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
-		yz_switch = true;
 		if (!b_animation) {
 			b_animation = true;
-			glutTimerFunc(10, Timer_yz_rotate, 0);
 		}
-		y_ratate = islower(key) ? 1 : -1;
 
 		break;
 	case'z':case'Z': //"z/Z: 중심의 구를 제외하고 행성, 달, 궤도가 z축에 대하여 양/음 방향으로 일제히 회전",
-		yz_switch = false;
 		if (!b_animation) {
 			b_animation = true;
-			glutTimerFunc(10, Timer_yz_rotate, 0);
 		}
-		z_ratate = islower(key) ? 1 : -1;
 		break;
 	case'+':
-		keyboard_wasd = 5;
 		if (!b_animation) {
 			b_animation = true;
 			glutTimerFunc(10, Timer_after_trans, 0);
 		}
 		break;
 	case'-':
-		keyboard_wasd = 6;
 		if (!b_animation) {
 			b_animation = true;
 			glutTimerFunc(10, Timer_after_trans, 0);
@@ -884,42 +794,14 @@ GLvoid Keyboardup(unsigned char key, int x, int y) {
 	case'P':case'p'://"p : 초기화 하기",
 		exit(0);
 		break;
-	case'H':case'h'://h: 은면제거 적용/해제
-		DEPTH_T = DEPTH_T == true ? false : true;
-		break;
-	case't':case'T'://"p/P: 직각 투영/원근 투영",
-		ortho = ortho == true ? false : true;
-		break;
 	case'w':case'W'://"w/a/s/d: 위의 도형들을 좌/우/상/하로 이동 (x축과 y축 값 이동 – 객체 이동)",
 		b_animation = false;
 		break;
-	case'a':case'A':
-		b_animation = false;
-		break;
-	case's':case'S':
-		b_animation = false;
-		break;
-	case'd':case'D':
-		b_animation = false;
-		break;
-	case'Y':case'y':
-		b_animation = false;
-		break;
-	case'z':case'Z': 
-		b_animation = false;
-		break;
-	case'+':
-		b_animation = false;
-		break;
-	case'-':
-		b_animation = false;
-		break;
+
 	}
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
-
-//← / → / ↑ / ↓ : 좌 / 우 / 상 / 하로 객체를 이동한다. (x축, y축으로 이동)
-GLvoid specialkeyborad(int key, int x, int y) {
+GLvoid specialkeyborad(int key, int x, int y) {//← / → / ↑ / ↓ : 좌 / 우 / 상 / 하로 객체를 이동한다. (x축, y축으로 이동)
 	std::cout << key << "입력받음." << '\n';
 	switch (key)
 	{
@@ -943,42 +825,43 @@ GLvoid specialkeyborad(int key, int x, int y) {
 	glutPostRedisplay();
 }
 
-float zoom{ 10.0f };	//zoom > 0, 크면 더 뒤로감
-GLvoid handleMouseWheel(int wheel, int direction, int x, int y) {
-	//wheel : 마우스 휠의 상태(눌려져있을때 1, 아님 0)
-	//direction: 휠의 돌아간 방향 (1: 앞으로, -1: 뒤로, 0: 휠 가만히)
-	//x,y : 마우스 위치
-	if (direction < 0) {	//휠을 아래로 돌림
-		zoom += 1.0f;
-	}
-	else if (direction > 0) {	//휠을 위로 돌림
-		zoom -= 1.0f;
-		if (zoom < 0.0f) {
-			zoom += 1.0f;
-		}
-	}
-	glutPostRedisplay(); // 화면 다시 그리기 요청
-}
-
 // ---- 그리기 콜백 함수------------------------------------------------------------------------------------
 GLvoid drawScene()
 {
-	//버퍼 초기화
-	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
-	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);			//--- 변경된 배경색 설정 
+	//glClearColor(0.785f, 0.785f, 0.785f, 1.0f);//버퍼 초기화, 배경색
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);//버퍼 초기화, 배경색			
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
-	//세이더 설정
 	glUseProgram(shaderProgramID);//--- 렌더링 파이프라인에 세이더 불러오기
+	//색설정
 	{
 		Color_option(true);
 		setColor({ 1.0f,0.0f,0.0f });
 	}
-	if (DEPTH_T) {
-		glEnable(GL_DEPTH_TEST);
+	
+	depth_choice();//은면제거
+	projectTransform_choice();//원근투영,직각투영
+	viewTransform();//뷰변환
+
+	draw_coordinate_axis();//좌표축 그리기
+	draw_floor();//바닥그리기
+
+	draw_object();// 오브젝트 출력
+	glutSwapBuffers();//--- 화면에 출력하기							
+}
+
+void viewTransform()
+{
+	{
+		glm::mat4 view = glm::mat4(1.0f);
+		view = glm::lookAt(cameraPos, cameraDirection, cameraUp);
+		unsigned int viewLocation = glGetUniformLocation(shaderProgramID, "viewTransform");  //뷰잉 변환 설정
+		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &view[0][0]);
 	}
-	else {
-		glDisable(GL_DEPTH_TEST);
-	}
+
+}
+
+void projectTransform_choice()
+{
 	// 투영변환
 	if (ortho) {  //직각투영
 		//std::cout << "직각투영" << "\n";
@@ -989,31 +872,36 @@ GLvoid drawScene()
 		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projection[0][0]);
 
 	}
-	else { // 원근투영
+	// 원근투영
+	else {
 		//std::cout << "원근투영" << "\n";
 		glm::mat4 projection = glm::mat4(1.0f);
-		projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f); //투영 공간 설정 : fovy, aspect, near, far
+		projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 300.0f); //투영 공간 설정 : fovy, aspect, near, far
 		projection = glm::translate(projection, glm::vec3(0.0, 0.0, -zoom));
 		unsigned int projectionLocation = glGetUniformLocation(shaderProgramID, "projectionTransform");
 		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projection[0][0]);
 	}
-	//뷰변환
-	{
-		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::lookAt(cameraPos, cameraDirection, cameraUp);
-		unsigned int viewLocation = glGetUniformLocation(shaderProgramID, "viewTransform");  //뷰잉 변환 설정
-		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &view[0][0]);
+}
+
+void depth_choice()
+{
+	if (DEPTH_T) {
+		glEnable(GL_DEPTH_TEST);
 	}
-	//xyz축그리기
+	else {
+		glDisable(GL_DEPTH_TEST);
+	}
+}
+
+void draw_coordinate_axis()
+{
 	{
 		glm::mat4 transformMatrix(1.0f);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(100.0f, 100.0f, 100.0f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 
-		glBindVertexArray(xyz.vao);
+		glBindVertexArray(line.vao);
 		glLineWidth(4);
 		{
 			Color_option(false);
@@ -1030,99 +918,82 @@ GLvoid drawScene()
 		glDrawArrays(GL_LINES, 4, 2);
 
 	}
+}
 
-	// 오브젝트 출력
-	void drawGLU();	//사용하기전에 선언.
-
-	glm::mat4 transform{ 1.0f };
-	// star 출력
-	star.setWorldTransform(transform);
+void draw_floor()
+{
 	{
-		Color_option(false);
-		setColor({ 1.0f,0.0f,0.0f });
-	}
-	drawGLU();
-	// planet 출력
-	
-	for (int i = 0; i < 3; ++i) {
-		{
-			Color_option(false);
-			setColor({ 1.0f,1.0f,0.0f });
+		glBindVertexArray(floor_b.vao);								//--- 사용할 VAO 불러오기
+		if (t_or_l) {//면으로 출력
+			{
+				Color_option(true);
+			}
+			glm::mat4 transformMatrix(1.0f);
+			transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+			transformMatrix = glm::scale(transformMatrix, glm::vec3(100.0f, 100.0f, 100.0f));
+			transformMatrix = glm::translate(transformMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
+
+			unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
+			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
+
+			glDrawElements(GL_TRIANGLES, floor_b.indexnum, GL_UNSIGNED_INT, 0);
 		}
-		transform = glm::mat4{ 1.0f };
-		planet[i].setWorldTransform(transform);
-		drawGLU();
+	}
+}
+
+void draw_object()
+{
+	void drawGLU();	//사용하기전에 선언.
+	void draw_obj();
+	{
+		glm::mat4 transform{ 1.0f };
+		All.setWorldTransform(transform);
+		Square_bottom.setWorldTransform(transform);
 		{
 			Color_option(false);
 			setColor({ 0.0f,0.0f,0.0f });
 		}
-		{
-			transform = glm::mat4{ 1.0f };
-			planet[i].trans_after_translate(transform);
-			planet[i].trans_after_rotate(transform);
-			//planet[i].trans_scale(transform);
-			transform = glm::scale(transform, glm::vec3(planet[i].translate.x));
-
-			void modelUniform(const glm::mat4 & transformMatrix);
-			modelUniform(transform);
-	
-			glBindVertexArray(circle.vao);
-			glLineWidth(4);
-			glDrawArrays(GL_LINE_LOOP, 0, circle.indexnum);
+		draw_obj();
+	}
+	{
+		for (int i = 0; i < 2; ++i) {
+			glm::mat4 transform{ 1.0f };
+			Bottom_barrel[i].setWorldTransform(transform);
+			All.setWorldTransform(transform);
+			Square_bottom_barrel[i].setWorldTransform(transform);
+			{
+				Color_option(false);
+				setColor({ 0.0f,0.0f,1.0f });
+			}
+			draw_obj();
 		}
 	}
-	
-	for (int i = 0; i < 3; ++i) {
+	{
+		glm::mat4 transform{ 1.0f };
+		Mid.setWorldTransform(transform);
+		All.setWorldTransform(transform);
+		Square_top.setWorldTransform(transform);
 		{
 			Color_option(false);
 			setColor({ 1.0f,1.0f,1.0f });
 		}
-		transform = glm::mat4{ 1.0f };
-		//planet[i].setWorldTransform(transform);
-		satellite[i].trans_after_translate(transform);
-		{
-			planet[i].trans_after_rotate(transform);
-			planet[i].trans_translate(transform);
-			planet[i].trans_rotate(transform);
+		draw_obj();
+	}
+	{
+		for (int i = 0; i < 2; ++i) {
+			glm::mat4 transform{ 1.0f };
+			Top_barrel[i].setWorldTransform(transform);
+			Mid.setWorldTransform(transform);
+			All.setWorldTransform(transform);
+			Square_top_barrel[i].setWorldTransform(transform);
+			{
+				Color_option(false);
+				setColor({ 0.0f,1.0f,0.0f });
+			}
+			draw_obj();
 		}
-
-		satellite[i].trans_after_rotate(transform);
-		satellite[i].trans_translate(transform);
-		satellite[i].trans_rotate(transform);
-		satellite[i].trans_scale(transform);
-
-		void modelUniform(const glm::mat4& transformMatrix);
-		modelUniform(transform);
-		drawGLU();
-		{
-			Color_option(false);
-			setColor({ 0.0f,0.0f,0.0f });
-		}
-		{
-			transform = glm::mat4{ 1.0f };
-			planet[i].trans_after_translate(transform);
-			planet[i].trans_after_rotate(transform);
-			planet[i].trans_translate(transform);
-			planet[i].trans_rotate(transform);
-			satellite[i].trans_scale(transform);
-			//satellite[i].trans_after_rotate(transform);
-
-			transform = glm::scale(transform, glm::vec3(satellite[i].translate.x));
-
-			void modelUniform(const glm::mat4& transformMatrix);
-			modelUniform(transform);
-
-			glBindVertexArray(circle.vao);
-			glLineWidth(4);
-			glDrawArrays(GL_LINE_LOOP, 0, circle.indexnum);
-		}
-
-
 	}
 
-
-
-	glutSwapBuffers();									//--- 화면에 출력하기
 }
 
 
@@ -1130,34 +1001,29 @@ void modelUniform(const glm::mat4& transformMatrix) {
 	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 }
-
-
 void Object::setWorldTransform(glm::mat4& transformMatrix) const {
 	trans_after_translate(transformMatrix);
 	trans_after_rotate(transformMatrix);
+	trans_after_scale(transformMatrix);
 	trans_translate(transformMatrix);
 	trans_rotate(transformMatrix);
 	trans_scale(transformMatrix);
 	modelUniform(transformMatrix);
-
-	{
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate_after.x), x_axis);
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate_after.y), y_axis);
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate_after.z), z_axis);
-
-		//transformMatrix = glm::translate(transformMatrix, translate);
-
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.z), z_axis);
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
-		//transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
-		//rotate.x = rotate[0]
-		//transformMatrix = glm::scale(transformMatrix, scale);
-	}
-	//unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-	//glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
 }
-
-
+void draw_obj() {
+	Mesh& m = mcube;
+	glBindVertexArray(m.vao);								//--- 사용할 VAO 불러오기
+	if (t_or_l) {//면으로 출력
+		for (int j = 0; j < m.indexnum / 2; j++) { // indexnum = 12;
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(j * 6 * sizeof(unsigned int)));
+		}
+	}
+	else { //선으로 출력
+		for (int j = 0; j < m.indexnum / 2; j++) {
+			glDrawElements(GL_LINE_LOOP, 6, GL_UNSIGNED_INT, (void*)(j * 6 * sizeof(unsigned int)));	//큐브 1면 출력
+		}
+	}
+}
 void drawGLU() {
 	GLUquadricObj* qobj;
 	qobj = gluNewQuadric(); // 객체 생성하기
@@ -1172,36 +1038,141 @@ void drawGLU() {
 	gluSphere(qobj, 1.0, 50, 50); // 객체 만들기
 }
 
+void InitBuffer_Line_xyz(Linexyz& l) {
+	//버퍼 생성
+	std::vector<float> vertex;
+	std::vector<float> color;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		vertex.push_back(l.p[i].x);
+		vertex.push_back(l.p[i].y);
+		vertex.push_back(l.p[i].z);
+
+		color.push_back(l.color.at(i * 3));		//r
+		color.push_back(l.color.at(i * 3 + 1));	//g
+		color.push_back(l.color.at(i * 3 + 2));	//b
+	}
+
+	//gpu 버퍼에 저장하기
+	{
+		glGenVertexArrays(1, &l.vao); //--- VAO 를 지정하고 할당하기
+		glBindVertexArray(l.vao);		//--- VAO를 바인드하기
+		glGenBuffers(2, l.vbo);		//--- 2개의 VBO를 지정하고 할당하기
+
+		//--- 1번째 VBO를 활성화하여 바인드하고, 버텍스 속성 (좌표값)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, l.vbo[0]);											//--- 변수 diamond 에서 버텍스 데이터 값을 버퍼에 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(GLfloat), vertex.data(), GL_STATIC_DRAW);	//--- triShape 배열의 사이즈: 9 * float
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 좌표값을 attribute 인덱스 0번에 명시한다: 버텍스 당 3* float
+		glEnableVertexAttribArray(0);													//--- attribute 인덱스 0번을 사용가능하게 함
+
+		//--- 2번째 VBO를 활성화 하여 바인드 하고, 버텍스 속성 (색상)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, l.vbo[1]);  										//--- 변수 colors에서 버텍스 색상을 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(GLfloat), color.data(), GL_STATIC_DRAW); 	//--- colors 배열의 사이즈: 9 *float
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 색상값을 attribute 인덱스 1번에 명시한다: 버텍스 당 3*float
+		glEnableVertexAttribArray(1);
+
+	}
+
+	vertex.clear();
+	color.clear();
+}
+
+void InitBuffer_floor(Floor_Mesh& s) {
+	//버퍼 생성
+	std::vector<float> s_vertex;
+	std::vector<float> l_vertex;
+	std::vector<float> vertex;
+
+	std::vector<float> color;
+
+
+	std::vector<unsigned int> index;
+	float degree{};
+	int count{};
+	while (degree < 360) {
+		vertex.push_back(cos(glm::radians(degree)));
+		vertex.push_back(0.0f);
+		vertex.push_back(sin(glm::radians(degree)));
+		index.push_back(count);
+		//검은색
+		color.push_back(randomnum(0.0f,1.0f));	//r
+		color.push_back(randomnum(0.0f, 1.0f));	//g
+		color.push_back(randomnum(0.0f, 1.0f));	//b
+		degree += 90.0f;
+		count++;
+	}
+
+	index.push_back(0);		
+	index.push_back(2);		
+	index.push_back(1);		
+	index.push_back(1);
+	index.push_back(3);
+	index.push_back(2);		
+
+
+	s.indexnum = index.size();
+
+	//gpu 버퍼에 저장하기
+	{
+		glGenVertexArrays(1, &s.vao); //--- VAO 를 지정하고 할당하기
+		glBindVertexArray(s.vao);		//--- VAO를 바인드하기
+		glGenBuffers(2, s.vbo);		//--- 2개의 VBO를 지정하고 할당하기
+
+		//--- 1번째 VBO를 활성화하여 바인드하고, 버텍스 속성 (좌표값)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[0]);											//--- 변수 diamond 에서 버텍스 데이터 값을 버퍼에 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(GLfloat), vertex.data(), GL_STATIC_DRAW);	//--- triShape 배열의 사이즈: 9 * float
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 좌표값을 attribute 인덱스 0번에 명시한다: 버텍스 당 3* float
+		glEnableVertexAttribArray(0);													//--- attribute 인덱스 0번을 사용가능하게 함
+
+		//--- 2번째 VBO를 활성화 하여 바인드 하고, 버텍스 속성 (색상)을 저장
+		glBindBuffer(GL_ARRAY_BUFFER, s.vbo[1]);  										//--- 변수 colors에서 버텍스 색상을 복사한다.
+		glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(GLfloat), color.data(), GL_STATIC_DRAW); 	//--- colors 배열의 사이즈: 9 *float
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);							//--- 색상값을 attribute 인덱스 1번에 명시한다: 버텍스 당 3*float
+		glEnableVertexAttribArray(1);
+
+		glGenBuffers(1, &s.ebo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s.ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.size() * sizeof(GLuint), index.data(), GL_STATIC_DRAW);
+
+	}
+	vertex.clear();
+	color.clear();
+	index.clear();
+}
 
 void reset() {
 	// 축 초기화
-	InitBuffer_line_xyz(xyz);
-	// 서클 초기화
-	InitBuffer_circle(circle);
+	InitBuffer_Line_xyz(line);
+	InitBuffer_floor(floor_b);
 
 	// 오브젝트 초기화
-	star.setRadius(0.0f);	
-	star.setScale(glm::vec3{4.0f});
-	int count{};
-	for (Object& o : planet) {
-		o.setRadius(13.0f); //반지름만큼 이동
-		o.set_Z_spin(-45.0f + count++ * 45.0f);
-		o.rotate_after.y = count * 120.0f;
-		o.speed = randomnum(1.5f, 5.5f);
-		o.setScale(glm::vec3{ 2.0f });
+	Square_bottom.go_trans(0.0f, 1.0f, 0.0f);
+	Square_bottom.setScale(2.0f, 1.0f, 2.0f);
+
+
+	int count = -1;
+	for (Object& b_b : Square_bottom_barrel) {
+		b_b.go_trans(1.5f * count, 0.2f, 2.8f) ;
+		b_b.setScale(0.2f, 0.2f, 0.8f);
+		//b_b.rotate = glm::vec3(0.0f, 90.0f, 0.0f);
+		count = 1;
 	}
-	for (Object& o : satellite) {
-		o.setRadius(5.0f);
-		o.setScale(glm::vec3{ 1.0f });
+
+	Square_top.go_trans(0.0f, 2.5f, 0.0f);
+	Square_top.setScale(1.0f, 0.5f, 1.0f);
+
+	count = -1;
+	for (Object& t_b : Square_top_barrel) {
+		t_b.go_trans(0.5f * count, 3.6f, 0.0f);
+		t_b.setScale(0.2f, 0.6f, 0.2f);
+		count = 1;
 	}
 }
 
-//--- 다시그리기 콜백 함수
-GLvoid Reshape(int w, int h)
-{
+GLvoid Reshape(int w, int h){//--- 다시그리기 콜백 함수
 	glViewport(0, 0, w, h);
 }
-
 
 void ReadObj(Mesh& mesh, FILE* path) {
 	char count[128];
@@ -1301,7 +1272,6 @@ void ReadObj(Mesh& mesh, FILE* path) {
 	delete[] face;
 	delete[] color;
 }
-
 
 void getobjfile(Mesh& mesh, const std::string& objname){
 	FILE* fp = fopen(objname.c_str(), "rt");
