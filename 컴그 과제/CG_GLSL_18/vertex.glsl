@@ -13,10 +13,12 @@ out vec3 passColor; //--- fragment shader로 전달
 //out float passSize;  //---  fragment shader로 크기 전달
 
 uniform mat4 modelTransform;
+uniform mat4 viewTransform;
+uniform mat4 projectionTransform;
 
 void main(void)
 { 
-	gl_Position = modelTransform * vec4 (vPos.x, vPos.y, vPos.z, 1.0);
+	gl_Position = projectionTransform * viewTransform * modelTransform * vec4 (vPos.x, vPos.y, vPos.z, 1.0);
 
 	passColor=  vColor;
 

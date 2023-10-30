@@ -18,6 +18,7 @@ const std::string Guide[]{
 	"h/H: 은면제거 적용/해제",
 	"w/W: 와이어 객체/솔리드 객체",
 	"y: y 축에 대하여 자전한다 멈춘다",
+	"f: 육면체의 앞면을 연다 앞면을 닫는다",
 	"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
 	"s: 육면체의 옆면을 연다 닫는다",
 	"b: 육면체의 뒷면을 연다 닫는다",
@@ -25,8 +26,9 @@ const std::string Guide[]{
 	"2: 피라미드",
 	"o: 사각뿔의 모든 면들이 함께 열린다 닫는다 사각뿔의 아래 면을 기준으로 애니메이션으로 열린다 80 도까지 열려서 네 개의 옆면이 아래에서 만난다",
 	"R: 사각뿔의 각 면이 한 개씩 열린다 닫는다 사각뿔의 한 면 씩 번갈아 가며 열린다 .열리는 각도는 평면 까지만(90 도) 열린다",
+	"p : 직각 투영 크기 : 2.0, 2.0]원근 투영 : fovy 45.0 도 , near 0.1, far 50.0투영 공간을 z 축으로 5.0 정도 이동시킨다",
 	"--------------------------------------------------------------------------------------------------",
-	"p : 초기화 하기",
+	"` : 초기화",
 	"q : 프로그램 종료",
 	"--------------------------------------------------------------------------------------------------"
 };
@@ -290,6 +292,16 @@ public:
 		rady = 0.0f;
 		radz = 0.0f;
 	}
+	void reset() {
+		rotate = { 0.0f,0.0f,0.0f };
+		translate = { 0.0f,0.0f,0.0f };
+		translate_st = { 0.0f,0.0f,0.0f };
+		scale = { 1.0f,1.0f,1.0f };
+		radx = 0.0f;
+		rady = 0.0f;
+		radz = 0.0f;
+
+	}
 };
 //전역변수 ----------------------------------------------------------------------------------------------
 
@@ -297,6 +309,9 @@ const glm::vec3 x_axis{ 1.0f,0.0f,0.0f }; //x축
 const glm::vec3 y_axis{ 0.0f,1.0f,0.0f }; //y축
 const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
 const glm::vec3 zero{ 0.0f,0.0f,0.0f }; // 원점
+//
+glm::vec3 cameraPos{ 1.0f }, cameraDirection{ zero }, cameraUp{y_axis};
+
 Mesh mcube, mpyramid;
 Mesh_motion_change m_motion_ch[6];
 linexyz xyz;//xyz축 그리기
@@ -306,6 +321,7 @@ bool DEPTH_T{ true }; // 은면제거
 bool t_or_l{ true };//면 또는 선
 bool left_button{ false }; //좌클릭
 bool b_animation{ false };
+bool ortho{ false };
 int all_animation{ 0 }; // 애니메인션 0:x,1:1, 2:2, 3:3, 4:t, 5:r
 int meshtarget{ 1 }; // 1:정육면체 .2:피라미드
 int dx{ 0 }; //음수 양수 바꾸기
@@ -486,25 +502,43 @@ void Timer_turn_top(int value) {
 }
 //----------Timer_turn_face-------------------------------------------------------------------------------
 void Timer_turn_face(int value) {
+	static int sign{ 1 };
+	static int count{};
 	if (all_animation == 2) {
 		m_motion_ch[2].translate_st = { 0.0f,-1.0f, -1.0f };
-		m_motion_ch[2].radx -= 1.0f;
+		m_motion_ch[2].radx -= 1.0f * sign;
 	}
-
+	if (m_motion_ch[2].radx < -90.0f || m_motion_ch[2].radx > 0.0f) {
+		count++;
+		std::cout << count << "번쨰 앞면 타이머 종료됨" << '\n';
+		sign *= -1;
+		m_motion_ch[2].radx -= 1.0f * sign;
+		b_animation = false;
+		return;
+	}
 	glutPostRedisplay();
-	if (b_animation && m_motion_ch[2].radx > -90.0f)
+	if (b_animation )
 		glutTimerFunc(10, Timer_turn_face, 0);
 }
-//----------Timer_y_rotate--------------------------------------------------------------------------------
+//----------Timer_side_up--------------------------------------------------------------------------------
 void Timer_side_up(int value) {
+	static int sign{ 1 };
 	if (all_animation == 1) {
 		m_motion_ch[1].translate_st = { 0.0f,-1.0f, 0.0f };
 		m_motion_ch[3].translate_st = { 0.0f,1.0f, 0.0f };
-		m_motion_ch[1].translate.y += 0.1f;
-		m_motion_ch[3].translate.y += 0.1f;
+		m_motion_ch[1].translate.y += sign * 0.01f;
+		m_motion_ch[3].translate.y += sign * 0.01f;
+	}
+	if (m_motion_ch[1].translate.y > 0.5f or m_motion_ch[1].translate.y < 0.0f) {
+		sign *= -1;
+		m_motion_ch[1].translate.y += sign * 0.01f;
+		m_motion_ch[3].translate.y += sign * 0.01f;
+		all_animation = -1;
+		b_animation = false;
+		return;
 	}
 	glutPostRedisplay();
-	if (b_animation && m_motion_ch[1].translate.y < 2.0f)
+	if (b_animation)
 		glutTimerFunc(10, Timer_side_up, 0);
 }
 //----------Timer_back_scale------------------------------------------------------------------------------
@@ -525,33 +559,72 @@ void Timer_pyramid_move_all(int value) {
 	if (all_animation == 7) {
 		for (int i = 0; i < 4; ++i) {
 			if (i % 2 == 0) { //0,2
-				m_motion_ch[i].translate_st = { 0.0f, -1.0f, 1.0f * dx };
+				m_motion_ch[i].translate_st = { 0.0f, -1.0f, 1.0f * (i%3==0)? 1 : -1};
 				m_motion_ch[i].radx += 1.f * dx;
 				dx *= -1;
 			}
 			else{
-				m_motion_ch[i].translate_st = { 1.0f * -dx, -1.0f, 0.0f };
+				m_motion_ch[i].translate_st = { 1.0f * (i % 3 == 0) ? -1 : 1, -1.0f, 0.0f };
 				m_motion_ch[i].radz -= 1.f * -dx;
 			}
 		}
+		if (m_motion_ch[0].radx > 233.0f || m_motion_ch[0].radx < 0.0f) {
+			//std::cout << "m_motion_ch[0].radx : " << m_motion_ch[0].radx << "\n";
+			dx *= -1;
+		}
 	}
 	glutPostRedisplay();
-	if (b_animation && m_motion_ch[0].radx < 233.0f)
+	if (b_animation)
 		glutTimerFunc(10, Timer_pyramid_move_all, 0);
 }
 //----------Timer_pyramid_move_each----------------------------------------------------------------------------------
 void Timer_pyramid_move_each(int value) {
+	static int select{ 0 };
+	static int direction{ 1 };
 	if (all_animation == 8) {
-		if (m_motion_ch[dy].radx < 90) { //0,2
-			m_motion_ch[dy].translate_st = { 0.0f, -1.0f, 1.0f * dx };
-			m_motion_ch[dy].radx += 1.0f * dx;
-			dx *= -1;
+		if (select % 2 == 0) { //0,2
+			m_motion_ch[select].translate_st = { 0.0f, -1.0f, 1.0f * (select % 3 == 0) ? 1 : -1 };
+			m_motion_ch[select].radx += 1.f * dx;
+			float max{ 0.0f }, min{ 0.0f };
+			if (select / 2 == 1) {
+				max = 0.0f; min = -120.0f; 
+			}
+			else { 
+				max = 120.0f; min = 0.0f; 
+			}
+
+			std::cout << "max " << max << "\n";
+			std::cout << "min " << max << "\n";
+
+			if (m_motion_ch[select].radx > max || m_motion_ch[select].radx < min) {
+				dx *= -1;
+				select++;
+			}
 		}
 		else {
-			m_motion_ch[dy].translate_st = { 1.0f * -dx, -1.0f, 0.0f };
-			m_motion_ch[dy].radz -= 1.0f * -dx;
+			m_motion_ch[select].translate_st = { 1.0f * (select % 3 == 0) ? -1 : 1, -1.0f, 0.0f };
+			m_motion_ch[select].radz -= 1.f * -dx;
+			float max{ 0.0f }, min{ 0.0f };
+			if (select / 2 == 0) {
+				max = 0.0f; min = -120.0f;
+			}
+			else {
+				max = 120.0f; min = 0.0f;
+			}
+			if (m_motion_ch[select].radz > max || m_motion_ch[select].radz < min) {
+				//std::cout << "m_motion_ch[select].radx : " << m_motion_ch[select].radx << "\n";
+				select++;
+				if (select >= 4) {
+					dx *= -1;
+					select = 0;
+				}
+			}
 		}
 	}
+	std::cout << "move_each Select :" << select << '\n'; 
+	std::cout << "m_motion_ch[" << select << "].radx : " << m_motion_ch[select].radx << "\n";
+	std::cout << "m_motion_ch[" << select << "].radz : " << m_motion_ch[select].radz << "\n";
+
 	glutPostRedisplay();
 	if (b_animation)
 		glutTimerFunc(10, Timer_pyramid_move_each, 0);
@@ -560,7 +633,7 @@ void Timer_pyramid_move_each(int value) {
 void Timer_turn_y(int value) {
 	if (all_animation == 6) {
 
-		rotate.y += 0.1f;
+		rotate.y += 1.f;
 		if (rotate.y >= 360.0f) {
 			rotate.y -= 360.0f;
 		}
@@ -593,7 +666,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		meshtarget = 2;
 		break;
 
-	case'P':case'p'://p : 초기 위치로 리셋(자전 애니메이션도 멈추기
+	case'`':case'~'://~ : 초기 위치로 리셋(자전 애니메이션도 멈추기
 		rotate.x = 0.0f;
 		rotate.y = 0.0f;
 		degree = 0.0f;
@@ -601,22 +674,26 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		translate_origin_obj = { 0.0f,0.0f,0.0f };
 		break;
 	case'T':case't': //"t: 육면체의 윗면 애니메이션 시작 정지윗면의 가운데 축을 중심으로 회전한다",
+		meshtarget = 1;
 		all_animation = 4;
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_turn_top, 0);
 		break;
 
 	case'F':case'f'://  f: 육면체의 앞면을 연다 앞면을 닫는다
+		meshtarget = 1;
 		all_animation = 2;
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_turn_face, 0);
 		break;
 	case'S':case's':// s : 육면체의 옆면을 연다 닫는다
+		meshtarget = 1;
 		all_animation = 1;
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_side_up, 0);
 		break;
 	case'B':case'b':// "b: 육면체의 뒷면을 연다 닫는다",
+		meshtarget = 1;
 		all_animation = 5;
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_back_scale, 0);
@@ -629,6 +706,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case'O': case'o':// "b: 육면체의 뒷면을 연다 닫는다",
+		meshtarget = 2;
 		all_animation = 7;
 		dx = 1; //방향전환용
 		b_animation = b_animation == true ? false : true;
@@ -636,12 +714,18 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case'R':case'r':// "b: 육면체의 뒷면을 연다 닫는다",
+		for (Mesh_motion_change& m : m_motion_ch) {
+			m.reset();
+		}
+		meshtarget = 2;
 		all_animation = 8;
 		dx = 1; //방향전환용
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_pyramid_move_each, 0);
 		break;
-
+	case'Z':case'z':// "b: 육면체의 뒷면을 연다 닫는다",
+		ortho = ortho == true ? false : true;
+		break;
 	}
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
@@ -676,12 +760,41 @@ GLvoid drawScene()
 	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
 	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);			//--- 변경된 배경색 설정 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
+
 	glUseProgram(shaderProgramID);						//--- 렌더링 파이프라인에 세이더 불러오기
+	// 투영변환
+	if(ortho){  //직각투영
+		//std::cout << "직각투영" << "\n";
+		glm::mat4 projection = glm::mat4(1.0f);
+		float len{ 2.0f };
+		projection = glm::ortho (-len, len, -len, len,-len, len);
+		unsigned int projectionLocation = glGetUniformLocation(shaderProgramID, "projectionTransform");
+		glUniformMatrix4fv (projectionLocation, 1, GL_FALSE, &projection[0][0]);
+
+	}
+	else { // 원근투영
+		//std::cout << "원근투영" << "\n";
+		glm::mat4 projection = glm::mat4(1.0f);
+		projection= glm::perspective (glm::radians(45.0f), 1.0f, 0.1f, 50.0f); //투영 공간 설정 : fovy, aspect, near, far
+		projection= glm::translate(projection, glm::vec3(0.0, 0.0, -5.0));
+		unsigned int projectionLocation = glGetUniformLocation(shaderProgramID, "projectionTransform");
+		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projection[0][0]);
+	}
+	//뷰변환
+	{
+		glm::mat4 view = glm::mat4(1.0f);
+		view = glm::lookAt (cameraPos, cameraDirection, cameraUp);
+		unsigned int viewLocation = glGetUniformLocation(shaderProgramID, "viewTransform");  //뷰잉 변환 설정
+		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &view[0][0]);
+	}
+
+
+
 	//xyz축그리기
 	{
 		glm::mat4 transformMatrix(1.0f);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
-		transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
+		//transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
+		//transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 		transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f, 10.0f, 10.0f));
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
@@ -738,16 +851,16 @@ GLvoid drawScene()
 
 void meshface_srt(int& i) {
 	glm::mat4 transformMatrix(1.0f);
-	transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
-	transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
-	transformMatrix = glm::scale(transformMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
+	//transformMatrix = glm::rotate(transformMatrix, glm::radians(-30.0f), x_axis);
+	//transformMatrix = glm::rotate(transformMatrix, glm::radians(45.0f), y_axis);
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.y), y_axis);
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.x), x_axis);
-
 	transformMatrix = glm::translate(transformMatrix, glm::vec3(m_motion_ch[i].translate));
+
+	transformMatrix = glm::scale(transformMatrix, glm::vec3{0.3f});
+
 	transformMatrix = glm::translate(transformMatrix, glm::vec3(m_motion_ch[i].translate_st));
 	transformMatrix = glm::scale(transformMatrix, glm::vec3(m_motion_ch[i].scale));
-
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(m_motion_ch[i].radx), x_axis);
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(m_motion_ch[i].rady), y_axis);
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(m_motion_ch[i].radz), z_axis);
@@ -890,6 +1003,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설�
 	//--- GLEW 초기화하기e
 	glewExperimental = GL_TRUE;
 	glewInit();
+	//--------------------------
 	std::cout << " GLEW 초기화 완료" << '\n';
 
 	make_shaderProgram();
