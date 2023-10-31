@@ -11,6 +11,7 @@ const std::string Guide[]{
 	"f/F: 포신이 y 축에 대하여 양 음 방향으로 회전하는데 , 두 포신이 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 	"e/E: 2 개 포신이 조금씩 이동해서 한 개가 된다 다시 제자리로 이동해서 2 개가 된다",
 	"t/T : 크레인의 맨 위 2 개의 팔이 z 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
+	"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
 	"--------------------------------------------------------------------------------------------------",
 	"카메라 변환",
 	"z/Z: 카메라가 z 축 양 음 방향으로 이동",
@@ -18,11 +19,6 @@ const std::string Guide[]{
 	"y/Y: 카메라 기준 y 축에 대하여 회전",
 	"r/R: 화면의 중심의 y 축에 대하여 카메라가 회전 중점에 대하여 공전",
 	"a/A: r 명령어와 같이 화면의 중심의 축에 대하여 카메라가 회전하는 애니메이션을 진행한다 멈춘다",
-	"--------------------------------------------------------------------------------------------------",
-	"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
-	"m/M: 솔리드 모델/와이어 모델",
-	"w/a/s/d: 위의 도형들을 좌/우/상/하로 이동 (x축과 y축 값 이동 – 객체 이동)",
-	"+/-: 위의 도형들을 앞/뒤로 이동 (z축 값 이동 – 객체 이동)",
 	"--------------------------------------------------------------------------------------------------",
 	"1: 직각 투영/원근 투영",
 	"2: 은면제거 적용/해제",
@@ -107,6 +103,7 @@ public:
 	glm::vec3 after_scale;//  after 공전
 	
 	glm::vec3 translate;// 위치
+	glm::vec3 st_translate;// 위치
 	glm::vec3 rotate;// 자전
 	glm::vec3 scale; // 크기
 
@@ -115,6 +112,7 @@ public:
 		after_rotate = { 0.0f,0.0f,0.0f };
 		after_scale = { 1.0f,1.0f,1.0f };
 		translate = { 0.0f,0.0f,0.0f };
+		st_translate = { 0.0f,0.0f,0.0f };
 		rotate = { 0.0f,0.0f,0.0f };
 		scale = { 1.0f,1.0f,1.0f };
 	}
@@ -155,7 +153,9 @@ public:
 	void trans_after_scale(glm::mat4& transformMatrix) const {
 		transformMatrix = glm::scale(transformMatrix, after_scale);
 	}
-
+	void trans_stt_translate(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::translate(transformMatrix, - st_translate);
+	}
 	void trans_translate(glm::mat4& transformMatrix) const {
 		transformMatrix = glm::translate(transformMatrix, translate);
 	}
@@ -167,22 +167,30 @@ public:
 	void trans_scale(glm::mat4& transformMatrix) const {
 		transformMatrix = glm::scale(transformMatrix, scale);
 	}
+	void trans_st_translate(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::translate(transformMatrix, st_translate);
+	}
 };
+int neg{ 1 };
 void Object::X_spin(const float& degree) {
-	rotate.x += degree;
+	rotate.x += degree * neg;
 
 	//각도 범위 유지
-	while (rotate.x > 180.0f) rotate.x -= 0.0f;
-	while (rotate.x < -180.0f) rotate.x += 0.0f;
-	
-
+	while (rotate.x > 90.0f) {
+		rotate.x = 90.0f;
+		neg *= -1;
+	}
+	while (rotate.x < -90.0f) {
+		rotate.x = -90.0f;
+		neg *= -1;
+	}
 }
 void Object::Y_spin(const float& degree) {
 	after_rotate.y += degree;
 
 	//각도 범위 유지
-	while (rotate.y > 360.0f) rotate.y -= 360.0f;
-	while (rotate.y < 0.0f) rotate.y += 360.0f;
+	while (after_rotate.y > 360.0f) after_rotate.y -= 360.0f;
+	while (after_rotate.y < 0.0f) after_rotate.y += 360.0f;
 }
 
 void Object::setScale(const float& x, const float& y, const float& z) {
@@ -201,13 +209,13 @@ void Object::aftertranslate(const float& x, const float& y, const float& z) {
 	after_translate.z += z;
 }
 void Object::go_trans(const float& x, const float& y, const float& z) {
-	translate.x += x;
-	translate.y += y;
-	translate.z += z;
+	after_translate.x += x;
+	after_translate.y += y;
+	after_translate.z += z;
 }
 
 
-Object Square_bottom, Square_top, Square_bottom_barrel[2], Square_top_barrel[2], All, Mid, Bottom, Bottom_barrel[2], Top_barrel[2];
+Object Square_bottom, Square_top, Square_bottom_barrel[2], Square_top_barrel[2], All, Mid, Bottom, Bottom_barrel[2];
 Mesh mcube, mpyramid;
 Linexyz line;
 Floor_Mesh floor_b;
@@ -215,6 +223,8 @@ Floor_Mesh floor_b;
 void make_shaderProgram();
 void getobjfile(Mesh& mesh, const std::string& objname);
 void reset();
+void reset2();
+
 //------------------------------------------------------------------------------------------------------
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
@@ -619,6 +629,8 @@ void Timer_after_trans(int value) {
 	const int f{ 6 };
 	const int T{ 7 };
 	const int t{ 8 };
+	const int Y{ 9 };
+	const int y{ 10 };
 	switch (b_keyboard){
 	case B://"b/B: 크레인의 아래 몸체가 x 축 방향으로 양 음 방향으로 이동한다 . 다시 누르면 멈춘다",
 		All.aftertranslate(0.1f, 0.0f,0.0f);
@@ -646,16 +658,25 @@ void Timer_after_trans(int value) {
 		break;
 	case T://"t/T : 크레인의 맨 위 2 개의 팔이 x 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 		for (int i = 0; i < 2; ++i) {
-			Top_barrel[i].X_spin(1.0f * -neg);
+			Square_top_barrel[i].st_translate.y = 0.5f;
+			Square_top_barrel[i].X_spin(1.0f * -neg);
 			neg *= -1;
 		}
 		break;
 	case t:
 		for (int i = 0; i < 2; ++i) {
-			Top_barrel[i].X_spin(1.0f * neg);
+			Square_top_barrel[i].st_translate.y = 0.5f;
+			Square_top_barrel[i].X_spin(1.0f * neg);
 			neg *= -1;
 		}
 		break;
+	case Y:	//"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
+		All.Y_spin( 1.0f );
+		break;
+	case y:
+		All.Y_spin(-1.0f);
+		break;
+
 	}
 	
 	glutPostRedisplay();
@@ -672,17 +693,6 @@ void Timer_after_trans(int value) {
 //"y/Y: 카메라 기준 y 축에 대하여 회전",
 //"r/R: 화면의 중심의 y 축에 대하여 카메라가 회전 중점에 대하여 공전",
 //"a/A: r 명령어와 같이 화면의 중심의 축에 대하여 카메라가 회전하는 애니메이션을 진행한다 멈춘다",
-//"--------------------------------------------------------------------------------------------------",
-//"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
-//"t/T: 직각 투영/원근 투영",
-//"m/M: 솔리드 모델/와이어 모델",
-//"w/a/s/d: 위의 도형들을 좌/우/상/하로 이동 (x축과 y축 값 이동 – 객체 이동)",
-//"+/-: 위의 도형들을 앞/뒤로 이동 (z축 값 이동 – 객체 이동)",
-//"--------------------------------------------------------------------------------------------------",
-//"s/S: 모든 움직임 멈추기",
-//"p : 초기화 하기",
-//"q : 프로그램 종료",
-//"--------------------------------------------------------------------------------------------------"
 //--------keyboard----------------------------------------
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	//빨강:x, 가로, 파랑:z,세로
@@ -691,6 +701,11 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	{
 	case'Q':case'q':
 		exit(0);
+		break;
+	case'c':case'C'://"c/C:초기화",
+		Square_bottom.reset();
+		reset();
+	
 		break;
 	case'2'://2: 은면제거 적용/해제
 		DEPTH_T = DEPTH_T == true ? false : true;
@@ -737,49 +752,21 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		b_keyboard = 8;
 		b_animation = b_animation == true ? false : true;
 		glutTimerFunc(10, Timer_after_trans, 0);
-
-	case'a':case'A':
-		if (!b_animation) {
-			b_animation = true;
-			glutTimerFunc(10, Timer_after_trans, 0);
-		}
 		break;
-	case's':case'S': 
-		if (!b_animation) {
-			b_animation = true;
-			glutTimerFunc(10, Timer_after_trans, 0);
-		}
+	case'Y'://"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
+		b_keyboard = 9;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
 		break;
-	case'd':case'D':
-		if (!b_animation) {
-			b_animation = true;
-			glutTimerFunc(10, Timer_after_trans, 0);
-		}
+	case'y':
+		b_keyboard = 10;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_after_trans, 0);
+		break;
+	case'S':case's'://"s/S: 모든 움직임 멈추기",
+		b_animation = false;
 		break;
 
-	case'Y':case'y'://"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
-		if (!b_animation) {
-			b_animation = true;
-		}
-
-		break;
-	case'z':case'Z': //"z/Z: 중심의 구를 제외하고 행성, 달, 궤도가 z축에 대하여 양/음 방향으로 일제히 회전",
-		if (!b_animation) {
-			b_animation = true;
-		}
-		break;
-	case'+':
-		if (!b_animation) {
-			b_animation = true;
-			glutTimerFunc(10, Timer_after_trans, 0);
-		}
-		break;
-	case'-':
-		if (!b_animation) {
-			b_animation = true;
-			glutTimerFunc(10, Timer_after_trans, 0);
-		}
-		break;
 
 	}
 	glutPostRedisplay(); // 화면 다시 그리기 요청
@@ -982,7 +969,6 @@ void draw_object()
 	{
 		for (int i = 0; i < 2; ++i) {
 			glm::mat4 transform{ 1.0f };
-			Top_barrel[i].setWorldTransform(transform);
 			Mid.setWorldTransform(transform);
 			All.setWorldTransform(transform);
 			Square_top_barrel[i].setWorldTransform(transform);
@@ -1005,9 +991,11 @@ void Object::setWorldTransform(glm::mat4& transformMatrix) const {
 	trans_after_translate(transformMatrix);
 	trans_after_rotate(transformMatrix);
 	trans_after_scale(transformMatrix);
+	trans_stt_translate(transformMatrix);
 	trans_translate(transformMatrix);
 	trans_rotate(transformMatrix);
 	trans_scale(transformMatrix);
+	trans_st_translate(transformMatrix);
 	modelUniform(transformMatrix);
 }
 void draw_obj() {
@@ -1166,6 +1154,31 @@ void reset() {
 	for (Object& t_b : Square_top_barrel) {
 		t_b.go_trans(0.5f * count, 3.6f, 0.0f);
 		t_b.setScale(0.2f, 0.6f, 0.2f);
+		count = 1;
+	}
+}
+void reset2() {
+
+	// 오브젝트 초기화
+	Square_bottom.go_trans(0.0f, -1.0f, 0.0f);
+	Square_bottom.setScale(2.0f, -1.0f, 2.0f);
+
+
+	int count = -1;
+	for (Object& b_b : Square_bottom_barrel) {
+		b_b.go_trans(-1.5f * count, -0.2f, -2.8f);
+		b_b.setScale(-0.2f, -0.2f, -0.8f);
+		//b_b.rotate = glm::vec3(0.0f, 90.0f, 0.0f);
+		count = 1;
+	}
+
+	Square_top.go_trans(-0.0f,-2.5f, -0.0f);
+	Square_top.setScale(-1.0f, -0.5f, -1.0f);
+
+	count = -1;
+	for (Object& t_b : Square_top_barrel) {
+		t_b.go_trans(-0.5f * count, -3.6f, -0.0f);
+		t_b.setScale(-0.2f, -0.6f, -0.2f);
 		count = 1;
 	}
 }
