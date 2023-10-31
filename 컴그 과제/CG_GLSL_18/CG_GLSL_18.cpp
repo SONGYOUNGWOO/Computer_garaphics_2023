@@ -355,6 +355,7 @@ GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID; //--- 셰이더 프로그램
 void make_shaderProgram();
 GLvoid drawScene();
+void draw_graph();
 void meshface_srt(int& i);
 
 GLvoid Reshape(int w, int h);
@@ -757,33 +758,38 @@ GLvoid specialkeyborad(int key, int x, int y) {
 // ---- 그리기 콜백 함수------------------------------------------------------------------------------------
 GLvoid drawScene()
 {
+	draw_graph();
+}
+
+void draw_graph()
+{
 	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);			//--- 변경된 배경색 설정 
 	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);			//--- 변경된 배경색 설정 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 
 	glUseProgram(shaderProgramID);						//--- 렌더링 파이프라인에 세이더 불러오기
 	// 투영변환
-	if(ortho){  //직각투영
+	if (ortho) {  //직각투영
 		//std::cout << "직각투영" << "\n";
 		glm::mat4 projection = glm::mat4(1.0f);
 		float len{ 2.0f };
-		projection = glm::ortho (-len, len, -len, len,-len, len);
+		projection = glm::ortho(-len, len, -len, len, -len, len);
 		unsigned int projectionLocation = glGetUniformLocation(shaderProgramID, "projectionTransform");
-		glUniformMatrix4fv (projectionLocation, 1, GL_FALSE, &projection[0][0]);
+		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projection[0][0]);
 
 	}
 	else { // 원근투영
 		//std::cout << "원근투영" << "\n";
 		glm::mat4 projection = glm::mat4(1.0f);
-		projection= glm::perspective (glm::radians(45.0f), 1.0f, 0.1f, 50.0f); //투영 공간 설정 : fovy, aspect, near, far
-		projection= glm::translate(projection, glm::vec3(0.0, 0.0, -5.0));
+		projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 50.0f); //투영 공간 설정 : fovy, aspect, near, far
+		projection = glm::translate(projection, glm::vec3(0.0, 0.0, -5.0));
 		unsigned int projectionLocation = glGetUniformLocation(shaderProgramID, "projectionTransform");
 		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projection[0][0]);
 	}
 	//뷰변환
 	{
 		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::lookAt (cameraPos, cameraDirection, cameraUp);
+		view = glm::lookAt(cameraPos, cameraDirection, cameraUp);
 		unsigned int viewLocation = glGetUniformLocation(shaderProgramID, "viewTransform");  //뷰잉 변환 설정
 		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &view[0][0]);
 	}
