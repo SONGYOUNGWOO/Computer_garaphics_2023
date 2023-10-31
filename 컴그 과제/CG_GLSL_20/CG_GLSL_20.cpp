@@ -11,7 +11,7 @@ const std::string Guide[]{
 	"f/F: 포신이 y 축에 대하여 양 음 방향으로 회전하는데 , 두 포신이 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 	"e/E: 2 개 포신이 조금씩 이동해서 한 개가 된다 다시 제자리로 이동해서 2 개가 된다",
 	"t/T : 크레인의 맨 위 2 개의 팔이 z 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
-	"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
+	"g/G: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
 	"--------------------------------------------------------------------------------------------------",
 	"카메라 변환",
 	"z/Z: 카메라가 z 축 양 음 방향으로 이동",
@@ -80,6 +80,25 @@ public:
 		indexnum = 0;
 	}
 };
+class Camera {
+public:
+	glm::vec3 cameraPos{};
+	glm::vec3 cameraDirection{};
+	glm::vec3 cameraUp{};
+	glm::vec3 n;
+	glm::vec3 u;
+	glm::vec3 v;
+	glm::mat4 view;
+	Camera() {
+		cameraPos = glm::vec3{ 0.0f, 1.0f, 1.0f };
+		cameraDirection = glm::vec3{ 0.0f,0.0f,0.0f };
+		cameraUp = glm::vec3{ 0.0f,1.0f,0.0f };
+		n = glm::vec3{ 0.0f,0.0f,0.0f };
+		u = glm::vec3{ 0.0f,0.0f,0.0f };
+		v = glm::vec3{ 0.0f,0.0f,0.0f };
+		view = glm::mat4(1.0f);
+	}
+};
 class Floor_Mesh { //바닥
 public:
 	GLuint vao;
@@ -96,7 +115,6 @@ public:
 }; 
 class Object {
 public:
-	float speed;
 	
 	glm::vec3 after_translate;// after 이동
 	glm::vec3 after_rotate;//  after 공전
@@ -118,7 +136,13 @@ public:
 	}
 
 	void reset() {
-		Object::Object();
+		after_translate = { 0.0f,0.0f,0.0f };
+		after_rotate = { 0.0f,0.0f,0.0f };
+		after_scale = { 1.0f,1.0f,1.0f };
+		translate = { 0.0f,0.0f,0.0f };
+		st_translate = { 0.0f,0.0f,0.0f };
+		rotate = { 0.0f,0.0f,0.0f };
+		scale = { 1.0f,1.0f,1.0f };
 	}
 
 	void setlocation(const float& x, const float& y, const float& z) {
@@ -209,21 +233,21 @@ void Object::aftertranslate(const float& x, const float& y, const float& z) {
 	after_translate.z += z;
 }
 void Object::go_trans(const float& x, const float& y, const float& z) {
-	after_translate.x += x;
-	after_translate.y += y;
-	after_translate.z += z;
+	after_translate.x = x;
+	after_translate.y = y;
+	after_translate.z = z;
 }
 
 
-Object Square_bottom, Square_top, Square_bottom_barrel[2], Square_top_barrel[2], All, Mid, Bottom, Bottom_barrel[2];
+Object Square_bottom, Square_top, Square_bottom_barrel[2], Square_top_barrel[2], All, Mid, Bottom_barrel[2];
 Mesh mcube, mpyramid;
 Linexyz line;
 Floor_Mesh floor_b;
+Camera camera_num[3];
 
 void make_shaderProgram();
 void getobjfile(Mesh& mesh, const std::string& objname);
 void reset();
-void reset2();
 
 //------------------------------------------------------------------------------------------------------
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
@@ -232,7 +256,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설�
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(300, 0);
-	glutInitWindowSize(800, 800);
+	glutInitWindowSize(1000, 800);
 	glutCreateWindow("Example9");
 	//--- GLEW 초기화하기e
 	glewExperimental = GL_TRUE;
@@ -459,15 +483,22 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설�
 
 //------------------------------------------------------------------------------------------------------
 bool DEPTH_T{ true }; // 은면제거
-static glm::vec3 cameraPos = glm::vec3{0.0f, 1.0f, 1.0f }, cameraDirection{ zero }, cameraUp{ y_axis };
+
+//static glm::vec3 cameraPos = glm::vec3{0.0f, 1.0f, 1.0f }, cameraDirection{ zero }, cameraUp{ y_axis };
+//
+//glm::vec3 camer_n = glm::normalize(cameraDirection - camera1.cameraPos);
+//glm::vec3 camer_u = glm::cross(camer_n, cameraUp);
+//glm::vec3 camer_v = glm::cross(camer_n, camer_u);
 bool t_or_l{ true };//면 또는 선
 bool left_button{ false }; //좌클릭
 int mouse_x{ 0 }, mouse_y{ 0 }; // 마우스 좌표
 bool b_animation{ false };
+bool b_camera{ false };
 bool ortho{ false }; // 투영변환
 int all_animation{ 0 }; // 애니메인션 0:x,1:1, 2:2, 3:3, 4:t, 5:r
 int obj_style{ 1 }; // 1: GLU_LINE, 2:GLU_FILL
 GLfloat degree{ 0.0f }; // 좌클릭시 회전각
+float startb_b;// Bottom_barrel[0].translate.x;
 
 //-------------------------------------------------------------------------------------------------------
 
@@ -500,7 +531,7 @@ void Color_option(const bool& vertex_color) {// true: 정점 색상, false: 내�
 	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "usev_color");
 	glUniform1i(modelLocation, vertex_color);		
 }
-
+void draw_object();
 //------------------------------------------------------------------------------------------------------
 void make_vertexShaders()//--- 프래그먼트 세이더 객체 만들기
 {
@@ -585,14 +616,22 @@ GLvoid Motion(int x, int y) {
 		float dx = mx - mouse_x;
 		float dy = my - mouse_y;
 		//x 변환
-		cameraPos = glm::rotate(glm::mat4{ 1.0f }, glm::radians(dx * 1), y_axis) * glm::vec4{ cameraPos, 1.0f};
+		for (Camera& c : camera_num) {
+			c.cameraPos = glm::rotate(glm::mat4{ 1.0f }, glm::radians(dx * 1), y_axis) * glm::vec4{ c.cameraPos, 1.0f };
+		}
 		//std::cout << "dy : " << dy << '\n';
+		
 		//y 변환
-		glm::vec3 n = glm::normalize(cameraDirection - cameraPos);
-		glm::vec3 u = glm::cross(n, cameraUp);
+		for (Camera& c : camera_num) {
+			c.n = glm::normalize(c.cameraDirection - c.cameraPos);
+			c.u = glm::cross(c.n, c.cameraUp);
+		}
+		/*glm::vec3 n = glm::normalize(cameraDirection - cameraPos);
+		glm::vec3 u = glm::cross(n, cameraUp);*/
 
-		cameraPos = glm::rotate(glm::mat4{ 1.0f }, glm::radians(dy *1), u) * glm::vec4{ cameraPos, 1.0f };
-
+		for (Camera& c : camera_num) {
+			c.cameraPos = glm::rotate(glm::mat4{ 1.0f }, glm::radians(dy * 1), c.u) * glm::vec4{ c.cameraPos, 1.0f };
+		}
 		mouse_x = mx;
 		mouse_y = my;
 
@@ -601,6 +640,7 @@ GLvoid Motion(int x, int y) {
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
 float zoom{ 10.0f };//zoom > 0, 크면 더 뒤로감
+
 GLvoid handleMouseWheel(int wheel, int direction, int x, int y) {
 	//wheel : 마우스 휠의 상태(눌려져있을때 1, 아님 0)
 	//direction: 휠의 돌아간 방향 (1: 앞으로, -1: 뒤로, 0: 휠 가만히)
@@ -619,21 +659,27 @@ GLvoid handleMouseWheel(int wheel, int direction, int x, int y) {
 
 //----------------Timer-----------------------------------
 int b_keyboard;
-void Timer_after_trans(int value) {
+void Timer_obj(int value){
 	int neg{ 1 };//방향
-	const int B{ 1 };
+	float ch{ 0.01f };
+	float cr{ 1.0f }; //각도
+	float rotationAngle = glm::radians(5.0f);
+	
+	const int B{ 1 };//"b/B: 크레인의 아래 몸체가 x 축 방향으로 양 음 방향으로 이동한다 . 다시 누르면 멈춘다",
 	const int b{ 2 };
-	const int M{ 3 };
+	const int M{ 3 };//"m/M: 크레인의 중앙 몸체가 y 축에 대하여 양 음 방향으로 회전한다 . 다시 누르면 멈춘다",
 	const int m{ 4 };
-	const int F{ 5 };
+	const int F{ 5 };//"f/F: 포신이 y 축에 대하여 양 음 방향으로 회전하는데 , 두 포신이 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 	const int f{ 6 };
-	const int T{ 7 };
+	const int T{ 7 };//"t/T : 크레인의 맨 위 2 개의 팔이 x 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 	const int t{ 8 };
-	const int Y{ 9 };
-	const int y{ 10 };
-	switch (b_keyboard){
+	const int G{ 9 };//"G/g: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
+	const int g{ 10 };
+	const int E{ 19 };//"e/E: 2 개 포신이 조금씩 이동해서 한 개가 된다 다시 제자리로 이동해서 2 개가 된다",
+	const int e{ 20 };
+	switch (b_keyboard) {
 	case B://"b/B: 크레인의 아래 몸체가 x 축 방향으로 양 음 방향으로 이동한다 . 다시 누르면 멈춘다",
-		All.aftertranslate(0.1f, 0.0f,0.0f);
+		All.aftertranslate(0.1f, 0.0f, 0.0f);
 		break;
 	case b:
 		All.aftertranslate(-0.1f, 0.0f, 0.0f);
@@ -658,41 +704,133 @@ void Timer_after_trans(int value) {
 		break;
 	case T://"t/T : 크레인의 맨 위 2 개의 팔이 x 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 		for (int i = 0; i < 2; ++i) {
-			Square_top_barrel[i].st_translate.y = 0.5f;
 			Square_top_barrel[i].X_spin(1.0f * -neg);
 			neg *= -1;
 		}
 		break;
 	case t:
 		for (int i = 0; i < 2; ++i) {
-			Square_top_barrel[i].st_translate.y = 0.5f;
 			Square_top_barrel[i].X_spin(1.0f * neg);
 			neg *= -1;
 		}
 		break;
-	case Y:	//"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
-		All.Y_spin( 1.0f );
+	case G:	//"G/g: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
+		All.Y_spin(1.0f);
 		break;
-	case y:
+	case g:
 		All.Y_spin(-1.0f);
 		break;
+	case E:	//"e/E: 2 개 포신이 조금씩 이동해서 한 개가 된다 다시 제자리로 이동해서 2 개가 된다",
+		if (Bottom_barrel[1].after_translate.x > -3.0f and b_animation == true) {
+			for (int i = 0; i < 2; ++i) {
 
+				Bottom_barrel[i].go_trans(ch, 0.0f, 0.0f);
+				ch *= -1;
+				//std::cout << "Bottom_barrel[ "<< i <<"].after_translate.x : " << Bottom_barrel[i].after_translate.x << '\n';
+			}
+		}
+		else {
+			for (int i = 0; i < 2; ++i) {
+				Bottom_barrel[i].after_translate.x = 3 * ch;
+				ch *= -1;
+			}
+		}
+		break;
+	case e:
+		
+		for (int i = 0; i < 2; ++i) {
+			Bottom_barrel[i].after_translate.x += ch;
+			ch *= -1;
+		}
+		break;
 	}
-	
+
 	glutPostRedisplay();
 	if (b_animation)
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 }
+void Timer_Camera(int value) {
+	int neg{ 1 };//방향
+	float ch{ 0.01f };
+	float cr{ 1.0f }; //각도
+	float camera_R{ 1.0f };
+	glm::vec3 camer_new{ 0.0f };//at-eye
+	float rotationAngle = glm::radians(5.0f);
+	const int Z{ 11 };//"z/Z: 카메라가 z 축 양/음 방향으로 이동",
+	const int z{ 12 };
+	const int X{ 13 };//"x/X: 카메라가 x 축 양 음 방향으로 이동",
+	const int x{ 14 };
+	const int Y{ 15 };//"y/Y: 카메라 기준 y 축에 대하여 회전",
+	const int y{ 16 };
+	const int R{ 17 };//"r/R: 화면의 중심의 y 축에 대하여 카메라가 회전 중점에 대하여 공전",
+	const int r{ 18 };
+	const int A{ 21};
+	switch (b_keyboard) {
+	case Z:	//"z/Z: 카메라가 z 축 양/음 방향으로 이동",
+		for (Camera& c : camera_num) {
+			c.cameraPos.z += 0.01f;
+		}
+		
+		break;
+	case z:
+		for (Camera& c : camera_num) {
+			c.cameraPos.z -= 0.01f;
+		}
+		
+		break;
 
+	case X:	//"x/X: 카메라가 x 축 양 음 방향으로 이동",
+		for (Camera& c : camera_num) {
+			c.cameraPos.x += 0.01f;
+		}
+		
+		break;
+	case x:
+		for (Camera& c : camera_num) {
+			c.cameraPos.x -= 0.01f;
+		}
+		break;
+
+	case Y:	//"y/Y: 카메라 기준 y 축에 대하여 회전",
+		for (Camera& c : camera_num) {
+			c.cameraPos = glm::rotate(glm::mat4{ 1.0f }, glm::radians(ch * 10), y_axis) * glm::vec4{ c.cameraPos, 1.0f };
+		}
+		break;
+	case y:
+		for (Camera& c : camera_num) {
+			c.cameraPos = glm::rotate(glm::mat4{ 1.0f }, glm::radians(-ch * 10), y_axis) * glm::vec4{ c.cameraPos, 1.0f };
+		}
+		break;
+
+	case R:	//"r/R: 화면의 중심의 y 축에 대하여 카메라가 회전 중점에 대하여 공전",
+		for (Camera& c : camera_num) {
+			c.cameraDirection = { 0.0f,1.0f,0.0f };
+		}
+		while (b_animation) {
+			for (Camera& c : camera_num) {
+				c.cameraPos = glm::rotate(glm::mat4(1.0f), glm::radians(cr), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(c.cameraPos, 1.0f);
+			}
+		}
+		break;
+	case r:
+		//cr *= -1;
+		for (Camera& c : camera_num) {
+			c.cameraPos = glm::rotate(glm::mat4(1.0f), glm::radians(-cr), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(c.cameraPos, 1.0f);
+		}
+		break;
+	case A:
+		for (Camera& c : camera_num) {
+			c.cameraDirection = glm::rotate(glm::mat4{ 1.0f }, glm::radians(camera_R), y_axis) * glm::vec4{ c.cameraDirection - c.cameraPos,1.0f } + glm::vec4{ c.cameraPos,1.0f };
+		}
+		
+		break;
+	}
+
+	glutPostRedisplay();
+	if (b_camera)
+		glutTimerFunc(10, Timer_Camera, 0);
+}
 //"--------------------------------------------------------------------------------------------------",
-//"e/E: 2 개 포신이 조금씩 이동해서 한 개가 된다 다시 제자리로 이동해서 2 개가 된다",
-//"--------------------------------------------------------------------------------------------------",
-//"카메라 변환",
-//"z/Z: 카메라가 z 축 양 음 방향으로 이동",
-//"x/X: 카메라가 x 축 양 음 방향으로 이동",
-//"y/Y: 카메라 기준 y 축에 대하여 회전",
-//"r/R: 화면의 중심의 y 축에 대하여 카메라가 회전 중점에 대하여 공전",
-//"a/A: r 명령어와 같이 화면의 중심의 축에 대하여 카메라가 회전하는 애니메이션을 진행한다 멈춘다",
 //--------keyboard----------------------------------------
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	//빨강:x, 가로, 파랑:z,세로
@@ -702,10 +840,29 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case'Q':case'q':
 		exit(0);
 		break;
+
 	case'c':case'C'://"c/C:초기화",
+		for (Camera& c : camera_num) {
+			c.cameraPos = glm::vec3{ 0.0f, 1.0f, 1.0f };
+			c.cameraDirection = { zero };
+			c.cameraUp = { y_axis };
+		}
+		b_animation = { false };
+		b_camera = { false };
 		Square_bottom.reset();
+		Square_top.reset();
+		All.reset();
+		Mid.reset();
+		for (Object& o : Square_bottom_barrel) {
+			o.reset();
+		}
+		for (Object& o : Square_top_barrel) {
+			o.reset();
+		}
+		for (Object& o : Bottom_barrel) {
+			o.reset();
+		}
 		reset();
-	
 		break;
 	case'2'://2: 은면제거 적용/해제
 		DEPTH_T = DEPTH_T == true ? false : true;
@@ -716,55 +873,112 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case'B'://"b/B: 크레인의 아래 몸체가 x 축 방향으로 양 음 방향으로 이동한다 . 다시 누르면 멈춘다",
 		b_keyboard = 1;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case'b':
 		b_keyboard = 2;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case'M'://"m/M: 크레인의 중앙 몸체가 y 축에 대하여 양 음 방향으로 회전한다 . 다시 누르면 멈춘다",
 		b_keyboard = 3;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case'm':
 		b_keyboard = 4;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case'F'://"f/F: 포신이 y 축에 대하여 양 음 방향으로 회전하는데 , 두 포신이 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 		b_keyboard = 5;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case'f':
 		b_keyboard = 6;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case'T'://"t/T : 크레인의 맨 위 2 개의 팔이 z 축에 대하여 양 음 방향으로 서로 반대방향으로 회전한다 . 다시 누르면 멈춘다",
 		b_keyboard = 7;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case't':
 		b_keyboard = 8;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
-	case'Y'://"y/Y: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
+	case'G'://"g/G: 전체 객체들을 y축으로 양/음 방향으로 회전 (중앙의 구의 y축에 대하여 회전)",
 		b_keyboard = 9;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
-	case'y':
+	case'g':
 		b_keyboard = 10;
 		b_animation = b_animation == true ? false : true;
-		glutTimerFunc(10, Timer_after_trans, 0);
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 	case'S':case's'://"s/S: 모든 움직임 멈추기",
 		b_animation = false;
+		b_camera = false;
+		break;
+	case'Z'://"z/Z: 카메라가 z 축 양 음 방향으로 이동",
+		b_keyboard = 11;
+		b_camera = true;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+	case'z':
+		b_camera = true;
+		b_keyboard = 12;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+		
+	case'X'://"x/X: 카메라가 x 축 양 음 방향으로 이동",
+		b_camera = true;
+		b_keyboard = 13;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+	case'x':
+		b_camera = true;
+		b_keyboard = 14;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+
+	case'Y'://"y/Y: 카메라 기준 y 축에 대하여 회전",
+		b_camera = true;
+		b_keyboard = 15;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+	case'y':
+		b_camera = true;
+		b_keyboard = 16;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+	case'R'://"r/R: 화면의 중심의 y 축에 대하여 카메라가 회전 중점에 대하여 공전",
+		b_camera = true;
+		b_keyboard = 17;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+	case'r':
+		b_camera = true;
+		b_keyboard = 18;
+		glutTimerFunc(10, Timer_Camera, 0);
+		break;
+		
+	case'a':case'A'://"a/A: r 명령어와 같이 화면의 중심의 축에 대하여 카메라가 회전하는 애니메이션을 진행한다 멈춘다",
+	
+		b_keyboard = 21;
+		glutTimerFunc(10, Timer_Camera, 0);
+		b_camera = b_camera == true ? false : true;
+		break;
+
+	case'e':case'E'://"e/E: 2 개 포신이 조금씩 이동해서 한 개가 된다 다시 제자리로 이동해서 2 개가 된다",
+		startb_b = Bottom_barrel[0].after_translate.x;//Bottom_barrel[0].translate.x;
+		b_keyboard = 19;
+		b_animation = b_animation == true ? false : true;
+		glutTimerFunc(10, Timer_obj, 0);
 		break;
 
 
@@ -812,39 +1026,87 @@ GLvoid specialkeyborad(int key, int x, int y) {//← / → / ↑ / ↓ : 좌 / �
 	glutPostRedisplay();
 }
 
+int scene_ch{};
 // ---- 그리기 콜백 함수------------------------------------------------------------------------------------
 GLvoid drawScene()
 {
-	//glClearColor(0.785f, 0.785f, 0.785f, 1.0f);//버퍼 초기화, 배경색
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);//버퍼 초기화, 배경색			
+	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);//버퍼 초기화, 배경색
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);//버퍼 초기화, 배경색			
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 	glUseProgram(shaderProgramID);//--- 렌더링 파이프라인에 세이더 불러오기
-	//색설정
+
+	//0
 	{
-		Color_option(true);
-		setColor({ 1.0f,0.0f,0.0f });
+		scene_ch = 0;
+		glViewport(50, 50, 400, 400);
+		{
+			Color_option(true);
+			setColor({ 1.0f,0.0f,0.0f });
+		}
+		depth_choice();//은면제거
+		projectTransform_choice();//원근투영,직각투영
+		viewTransform();//뷰변환
+		draw_coordinate_axis();//좌표축 그리기
+		draw_floor();//바닥그리기
+		draw_object();// 오브젝트 출력
 	}
-	
-	depth_choice();//은면제거
-	projectTransform_choice();//원근투영,직각투영
-	viewTransform();//뷰변환
+	//1 직각 투영 xz 평면
+	{
+		scene_ch = 1;
+		glViewport(500, 50, 400, 400);
+		{
+			Color_option(true);
+			setColor({ 1.0f,0.0f,0.0f });
+		}
+		depth_choice();//은면제거
 
-	draw_coordinate_axis();//좌표축 그리기
-	draw_floor();//바닥그리기
+		/*cameraPos = { 0.0f,1.0f,0.0f };
+		cameraUp = { x_axis };*/
 
-	draw_object();// 오브젝트 출력
-	glutSwapBuffers();//--- 화면에 출력하기							
+		projectTransform_choice();//원근투영,직각투영
+		viewTransform();//뷰변환
+
+		draw_coordinate_axis();//좌표축 그리기
+		draw_floor();//바닥그리기
+
+		draw_object();// 오브젝트 출력
+	}
+	//2 직각 투영 xy 평면
+	{
+		scene_ch = 2;
+		glViewport(500, 500, 300, 300);
+		{
+			Color_option(true);
+			setColor({ 1.0f,0.0f,0.0f });
+		}
+
+		/*cameraPos = { 1.0f,0.0f,0.0f };
+		cameraUp = { y_axis };*/
+
+		depth_choice();//은면제거
+		projectTransform_choice();//원근투영,직각투영
+		viewTransform();//뷰변환
+
+		draw_coordinate_axis();//좌표축 그리기
+		draw_floor();//바닥그리기
+
+		draw_object();// 오브젝트 출력
+	}
+
+
+	glutSwapBuffers();//--- 화면에 출력하기		
 }
 
 void viewTransform()
 {
-	{
-		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::lookAt(cameraPos, cameraDirection, cameraUp);
-		unsigned int viewLocation = glGetUniformLocation(shaderProgramID, "viewTransform");  //뷰잉 변환 설정
-		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &view[0][0]);
+	for (int i = 0; i < 3; ++i) {
+		if (scene_ch = i) {
+			glm::mat4 view = glm::mat4(1.0f);
+			camera_num[i].view = glm::lookAt(camera_num[i].cameraPos, camera_num[i].cameraDirection, camera_num[i].cameraUp);
+			unsigned int viewLocation = glGetUniformLocation(shaderProgramID, "viewTransform");  //뷰잉 변환 설정
+			glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &view[0][0]);
+		}
 	}
-
 }
 
 void projectTransform_choice()
@@ -853,7 +1115,7 @@ void projectTransform_choice()
 	if (ortho) {  //직각투영
 		//std::cout << "직각투영" << "\n";
 		glm::mat4 projection = glm::mat4(1.0f);
-		float len{ 2.0f };
+		float len{ 10.0f };
 		projection = glm::ortho(-len, len, -len, len, -len, len);
 		unsigned int projectionLocation = glGetUniformLocation(shaderProgramID, "projectionTransform");
 		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projection[0][0]);
@@ -1143,7 +1405,6 @@ void reset() {
 	for (Object& b_b : Square_bottom_barrel) {
 		b_b.go_trans(1.5f * count, 0.2f, 2.8f) ;
 		b_b.setScale(0.2f, 0.2f, 0.8f);
-		//b_b.rotate = glm::vec3(0.0f, 90.0f, 0.0f);
 		count = 1;
 	}
 
@@ -1156,34 +1417,18 @@ void reset() {
 		t_b.setScale(0.2f, 0.6f, 0.2f);
 		count = 1;
 	}
-}
-void reset2() {
 
-	// 오브젝트 초기화
-	Square_bottom.go_trans(0.0f, -1.0f, 0.0f);
-	Square_bottom.setScale(2.0f, -1.0f, 2.0f);
-
-
-	int count = -1;
-	for (Object& b_b : Square_bottom_barrel) {
-		b_b.go_trans(-1.5f * count, -0.2f, -2.8f);
-		b_b.setScale(-0.2f, -0.2f, -0.8f);
-		//b_b.rotate = glm::vec3(0.0f, 90.0f, 0.0f);
-		count = 1;
-	}
-
-	Square_top.go_trans(-0.0f,-2.5f, -0.0f);
-	Square_top.setScale(-1.0f, -0.5f, -1.0f);
-
-	count = -1;
-	for (Object& t_b : Square_top_barrel) {
-		t_b.go_trans(-0.5f * count, -3.6f, -0.0f);
-		t_b.setScale(-0.2f, -0.6f, -0.2f);
-		count = 1;
+	for (Camera& c : camera_num) {
+		c.cameraPos = glm::vec3{ 0.0f, 1.0f, 1.0f };
+		c.cameraDirection = glm::vec3{ 0.0f,0.0f,0.0f };
+		c.cameraUp = glm::vec3{ 0.0f,1.0f,0.0f };
 	}
 }
+
+
 
 GLvoid Reshape(int w, int h){//--- 다시그리기 콜백 함수
+
 	glViewport(0, 0, w, h);
 }
 
