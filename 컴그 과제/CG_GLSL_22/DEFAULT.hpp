@@ -19,6 +19,20 @@ const glm::vec3 y_axis{ 0.0f,1.0f,0.0f }; //y축
 const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
 const glm::vec3 zero{ 0.0f,0.0f,0.0f }; // 원점
 
+float randomnum(float a, float b) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(a, b);
+	return dis(gen);
+}
+int randomnum(int a, int b) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution dis(a, b);
+	return dis(gen);
+}
+
+
 GLvoid drawScene();
 void viewTransform();
 void projectTransform_choice();
