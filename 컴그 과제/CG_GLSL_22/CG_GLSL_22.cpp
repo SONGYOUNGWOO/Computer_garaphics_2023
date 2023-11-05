@@ -785,13 +785,17 @@ GLvoid Keyboardup(unsigned char key, int x, int y) {
 	case'W': case'w':
 		/*robot.Y_spin(90.0f, false);
 		std::cout << "각도: " << robot.rotate.y << '\n';*/
-		b_animation = false;
+		break;
+
 	case'A': case'a':
-		b_animation = false;
+		break;
+
 	case'S': case's':
-		b_animation = false;
+		break;
+
 	case'D': case'd':
-		b_animation = false;
+		break;
+
 	}
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
