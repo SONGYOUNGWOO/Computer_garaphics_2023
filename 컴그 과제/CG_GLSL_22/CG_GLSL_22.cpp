@@ -599,9 +599,16 @@ void Timer_obj(int value){
 			robot.apress = false;
 			robot.dpress = false;
 		}
-		if (-50.0f < robot.translate.z  and robot.translate.z < 50.0f) {
+		if (-27.0f < robot.translate.z  and robot.translate.z < 27.0f) {
 			robot.translate.z -= robot.speed;
+			std::cout << "robot.translate.z : " << robot.translate.z << '\n';
 		}
+		else if (- 27.0f > robot.translate.z || robot.translate.z > 27.0f) {
+			robot.Y_spin(360.0f, false);
+			robot.translate.z += robot.speed;
+			robot.robot_re_di = 0.0f;
+		}
+		
 	
 		break;
 	case s://"z축 +",
@@ -613,9 +620,10 @@ void Timer_obj(int value){
 			robot.apress = false;
 			robot.dpress = false;
 		}
-		if (-50.0f < robot.translate.z and robot.translate.z < 50.0f) {
+		if (-30.0f < robot.translate.z and robot.translate.z < 30.0f) {
 			robot.translate.z += robot.speed;
 		}
+		
 		break;
 	case a://"x축 -",
 		if (!robot.apress) {
@@ -626,7 +634,7 @@ void Timer_obj(int value){
 			robot.wpress = false;
 			robot.dpress = false;
 		}
-		if (-50.0f < robot.translate.z and robot.translate.z < 50.0f) {
+		if (-30.0f < robot.translate.x and robot.translate.x < 30.0f) {
 			robot.translate.x -= robot.speed;
 		}
 		break;
@@ -639,10 +647,10 @@ void Timer_obj(int value){
 			robot.apress = false;
 			robot.wpress = false;
 		}
-		if (-50.0f < robot.translate.z and robot.translate.z < 50.0f) {
-
+		if (-30.0f < robot.translate.x and robot.translate.x < 30.0f) {
 			robot.translate.x += robot.speed;
 		}
+	
 		
 		break;
 
@@ -744,7 +752,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case'W': case'w':
 		if(!b_animation)
 			glutTimerFunc(10, Timer_obj, 0);
-
+		
 		robot.robot_di = 180.0f;
 		b_animation = true;
 		b_keyboard = 2;
@@ -1032,7 +1040,6 @@ void draw_floor()
 		}
 	}
 }
-
 
 void Robot::render_head(const glm::vec3  axis[3])
 {

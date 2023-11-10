@@ -19,6 +19,8 @@ const glm::vec3 y_axis{ 0.0f,1.0f,0.0f }; //y축
 const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //z축
 const glm::vec3 zero{ 0.0f,0.0f,0.0f }; // 원점
 
+
+
 GLvoid drawScene();
 void viewTransform();
 void projectTransform_choice();

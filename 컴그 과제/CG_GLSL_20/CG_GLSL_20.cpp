@@ -1060,7 +1060,7 @@ int scene_ch{};
 GLvoid drawScene()
 {
 	glClearColor(0.785f, 0.785f, 0.785f, 1.0f);//버퍼 초기화, 배경색
-	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);//버퍼 초기화, 배경색			
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);//버퍼 초기화, 하늘색 80,188,223
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 	glUseProgram(shaderProgramID);//--- 렌더링 파이프라인에 세이더 불러오기
 
