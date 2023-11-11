@@ -12,7 +12,7 @@ const std::string Guide[]{
 	"--------------------------------------------------------------------------------------------------"
 };
 const int WIN_X = 400, WIN_Y = 0;
-const int WIN_W = 900, WIN_H = 900;
+const int WIN_W = 800, WIN_H = 800;
 
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
@@ -25,6 +25,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	//--- GLEW 초기화하기e
 	glewExperimental = GL_TRUE;
 	glewInit();
+
 	std::cout << " GLEW 초기화 완료" << '\n';
 
 	make_shaderProgram();
@@ -32,11 +33,10 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	reset();
 	std::cout << " reset 초기화 완료" << '\n';
 
-
 	for (std::string s : Guide) {
 		std::cout << s << '\n';
 	}
-	glutTimerFunc(30, basket_timer, 0);
+	glutTimerFunc(30, timer, 0);
 
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(Reshape);
@@ -60,20 +60,259 @@ int randomnum(int a, int b) {
 	return dis(gen);
 }
 
-class Object{
+class Mesh {
 public:
-	GLfloat x, y, size;			// 중심 좌표, 마우스 클릭
-	float time, dx, dy;
-	int pointnum;
-	int indexnum;				 //index.size()
 	GLuint vao;
 	GLuint vbo[2];
 	GLuint ebo;
-	bool canuse;				// 도형이 사용가능 여부 (지워졌나)
-	std::vector<float> color;
-	GLint motions, down;
-	float chy;
+	bool vao_ox;
+
+	std::vector<glm::vec3> vertex;
+	std::vector<glm::vec3> color;
+	std::vector<unsigned int> index;
+
+	Mesh() {
+		cout << "Mesh 생성자 호출";
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao); 
+		glGenBuffers(2, vbo);
+		glGenBuffers(1, &ebo);
+		glBindVertexArray(0); //초기화
+		vao_ox = true;
+
+	}
+
+
+	~Mesh() {
+		if (vao_ox) {
+			glDeleteBuffers(1, &ebo);
+			glDeleteBuffers(2, vbo);
+			glDeleteVertexArrays(1, &vao);
+		}
+	}
+
+	// 복사 생성자 ( Mesh b = a ) ( copy construction)
+	Mesh(const Mesh& other) {
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+		glGenBuffers(2, vbo);
+		glGenBuffers(1, &ebo);
+		glBindVertexArray(0); //초기화
+
+		for (const glm::vec3& v : other.vertex) {
+			vertex.push_back(v);
+		}
+		for (const glm::vec3& v : other.color) {
+			color.push_back(v);
+		}
+		for (const GLuint& ui : other.index) {
+			index.push_back(ui);
+		}	
+		send_gpu();
+		vao_ox = true;
+	}
+
+	// 복사 할당(대입) 연산자(= copy assignment operator)
+	Mesh& operator=(const Mesh& other) {
+		if (this == &other) {
+			// a = a = a = a = a;
+			return *this;
+		}
+		// 1. 기본 값 제거
+		// 2. 새로운 값으로 할당
+		for (const glm::vec3& v : other.vertex) {
+			vertex.push_back(v);
+		}
+		for (const glm::vec3& v : other.color) {
+			color.push_back(v);
+		}
+		for (const GLuint& ui : other.index) {
+			index.push_back(ui);
+		}
+		send_gpu();
+		return *this;
+	}
+
+	// 이동 생산자 ( move construction)
+	Mesh(Mesh&& other) noexcept {
+		// 기존 변수 초기화
+		vertex.clear();
+		color.clear();
+		index.clear();
+
+		// 이동 시작
+		vao = other.vao;
+		vbo[0] = other.vbo[0];
+		vbo[1] = other.vbo[1];
+		vao = other.vao;
+
+
+		vertex = std::move(other.vertex);
+		color = std::move(other.color);
+		index = std::move(other.index);
+		vao_ox = true;
+		// other의 내용을 초기화 해야함(ex : 포인터는 nullptr, 밸류값은 0으로 같은거)
+		other.vao_ox = false;
+	}
+
+	// 이동 할당(대입) 연산자 (= move assignment operator)
+	Mesh& operator=(Mesh&& other) noexcept {
+		if (this == &other) {
+			// a = a = a = a = a;
+			return *this;
+		}
+
+		vao = other.vao;		
+		vbo[0] = other.vbo[0];
+		vbo[1] = other.vbo[1];
+		vao = other.vao;
+
+
+		vertex = std::move(other.vertex);
+		color = std::move(other.color);
+		index = std::move(other.index);
+
+		other.vao_ox = false;
+		return *this;
+	}
+
+	void send_gpu();
+
+	void set_polygon(const int& vertex_num = 3);
+
+	void draw();
 };
+
+void Mesh::send_gpu() {
+	//gpu 버퍼에 저장하기
+	glBindVertexArray(vao);
+	//--- 1번째 VBO를 활성화하여 바인드하고, 버텍스 속성 (좌표값)을 저장
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(glm::vec3), vertex.data(), GL_STATIC_DRAW);	//배열의 사이즈
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);	//--- 좌표값을 attribute 인덱스 0번에 명시한다: 버텍스 당 3* float
+	glEnableVertexAttribArray(0);//--- attribute 인덱스 0번을 사용가능하게 함
+	//--- 2번째 VBO를 활성화 하여 바인드 하고, 버텍스 속성 (색상)을 저장
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]); //--- 변수 colors에서 버텍스 색상을 복사한다.
+	glBufferData(GL_ARRAY_BUFFER, color.size() * sizeof(glm::vec3), color.data(), GL_STATIC_DRAW);//--- colors 배열의 사이즈: 9 *float
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);//--- 색상값을 attribute 인덱스 1번에 명시한다: 버텍스 당 3*float
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.size() * sizeof(GLuint), index.data(), GL_STATIC_DRAW);
+
+}
+
+void Mesh::set_polygon(const int& vertex_num) {
+	vertex.clear();
+	color.clear();
+	index.clear();
+
+	float s_rad = 360.0 / vertex_num;
+
+	for (int i = 0; i < vertex_num; ++i)
+	{
+		vertex.push_back({ cos(glm::radians(i * s_rad)), sin(glm::radians(i * s_rad)), 0.0f });
+		color.push_back({ randomnum(0.0f, 1.0f), randomnum(0.0f, 1.0f), randomnum(0.0f, 1.0f) });		
+		
+		if (i >= 2) {
+			index.push_back(0);
+			index.push_back(i - 1);
+			index.push_back(i);
+		}
+	}	
+}
+
+void Mesh::draw()
+{
+	for (int i = 0; i < vertex.size(); ++i) {
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(i * 3 * sizeof(unsigned int)));
+	}
+}
+
+class Object {
+public:
+	glm::vec3 translate{ 0.0f};
+	glm::vec3 rotate{ 0.0f };
+	glm::vec3 scale{ 1.0f};
+	glm::vec3 after_translate{ 0.0f };
+	glm::vec3 after_rotate{ 0.0f };
+	glm::vec3 after_scale{ 1.0f};
+	float y_speed{ 1.0f };
+	bool start_x{ false }; // 양수 = true
+
+	Object() {
+	}
+
+	void reset() {
+		translate = { 0.0f,0.0f,0.0f };
+		rotate = { 0.0f,0.0f,0.0f };
+		scale = { 1.0f,1.0f,1.0f };
+		after_translate = { 0.0f,0.0f,0.0f };
+		after_rotate = { 0.0f,0.0f,0.0f };
+		after_scale = { 1.0f,1.0f,1.0f };
+	}
+
+	Mesh mesh;
+
+	void set_world_transform(glm::mat4& transformMatrix) const;
+	void set_location(const float& x, const float& y, const float& z) {
+		translate.x = x;
+		translate.y = y;
+		translate.z = z;
+	}
+	void translate_after(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::translate(transformMatrix, after_translate);
+	}
+	void rotate_after(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(after_rotate.z), z_axis);
+	}
+	void scale_after(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::scale(transformMatrix, after_scale);
+	}
+
+	void translate_matrix(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::translate(transformMatrix, translate);
+	}
+	void rotate_matrix(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::rotate(transformMatrix, glm::radians(rotate.z), z_axis);
+	}
+	void scale_matrix(glm::mat4& transformMatrix) const {
+		transformMatrix = glm::scale(transformMatrix, scale);
+	}
+
+	void set_scale(const float& x, const float& y, const float& z);
+	void go_trans(const float& x, const float& y, const float& z);// 이동
+	void Z_spin(const float&, const bool& degreeb);// z축으로 자전시키는 함수
+
+};
+
+void Object::set_scale(const float& x, const float& y, const float& z) {
+	after_scale.x = x;
+	after_scale.y = y;
+	after_scale.z = z;
+}
+
+void Object::go_trans(const float& x, const float& y, const float& z) {
+	after_translate.x += x;
+	after_translate.y += y;
+	after_translate.z += z;
+}
+
+void Object::Z_spin(const float& degree, const bool& degreeb) {
+	//각도 범위 유지
+	after_rotate.y += degree;
+	while (after_rotate.y > 360.0f) after_rotate.y -= 360.0f;
+	while (after_rotate.y < 0.0f) after_rotate.y += 360.0f;
+}
+
+void Object::set_world_transform(glm::mat4& transformMatrix) const {
+	translate_after(transformMatrix);
+	rotate_after(transformMatrix);
+	scale_after(transformMatrix);
+	translate_matrix(transformMatrix);
+	rotate_matrix(transformMatrix);
+	scale_matrix(transformMatrix);
+}
 
 typedef struct allshape {
 	GLfloat x, y, size;			// 중심 좌표, 마우스 클릭
@@ -91,14 +330,35 @@ typedef struct allshape {
 }shape;
 
 //--- 전역변수 ----
-shape rect[15];
 shape basket;
-int choice(0);		//그릴 도형 모양
-bool start = false; // 타이머 실행 여부
-int n = 0;			// 출력할 도형 개수
-GLuint vao, vbo[2];
 int target{ 0 };  //선택한 도형
 bool left_button = false;
+
+//Object* slice_polygon = new Object[5]; //한번에 존재 하는 폴리곤 개수
+std::vector<Object> slice_polygon;
+
+//class VECTOR {
+//	size_t value_size{ 0 };
+//	Object* p{ nullptr };
+//public:
+//	VECTOR() {}
+//	size_t size() {
+//		return value_size;
+//	}
+//
+//	void push_back(Object& other) {
+//		Object* new_p = new Object[value_size + 1];
+//		if (p != nullptr) {
+//			for (int i = 0; i < value_size; i++) {
+//				new_p[i] = std::move(p[i]);	//복사 할당 연산자
+//			}
+//			delete[] p;
+//		}
+//		p = new_p;
+//		p[value_size] = other;
+//		++value_size;
+//	}
+//};
 
 char* filetobuf(const char* file)
 {
@@ -290,50 +550,9 @@ bool IsCollision(const shape& rect1, const shape& rect2) {
 
 void Mouse(int button, int state, int x, int y) {
 
-	float mx = (x - 800 / 2.0f) / (800 / 2.0f);
-	float my = (800 / 2.0f - y) / (800 / 2.0f);
+	float mx = (x - WIN_W / 2.0f) / (WIN_W / 2.0f);
+	float my = (WIN_H / 2.0f - y) / (WIN_H / 2.0f);
 
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-
-		for (int i = 0; i < n; ++i) {
-
-			if (rect[i].pointnum == 0) {
-				continue;
-			}
-			if (rect[i].x - rect[i].size < mx and mx < rect[i].x + rect[i].size and	 //충돌판정
-				rect[i].y - rect[i].size < my and my < rect[i].y + rect[i].size) {
-				left_button = true;
-				target = i;
-			}
-		}
-		std::cout << "target은 : " << target << "\n";
-		//
-		std::cout << "마우스 클릭 타이머 시작된 도형 번호[:" << target << "]" << '\n';
-		//InitBuffer(rect[target]);
-		//glutTimerFunc(10, TimerA, target);
-
-	}
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
-		for (int i = 0; i < 15; ++i) {
-			if (i == target || rect[i].pointnum == 0) {
-				continue;
-			}
-			if (IsCollision(rect[i], rect[target])) {
-				rect[target].pointnum += rect[i].pointnum;
-				if (rect[target].pointnum > 6) {
-					rect[target].pointnum = 1;
-				}
-				rect[i].pointnum = 0;//점에 개수 변경
-				InitBuffer(rect[i]);
-				InitBuffer(rect[target]);
-
-				glutTimerFunc(10, TimerB, target);
-				break;
-			}
-		}
-		target = -1; // target 초기화
-		left_button = false;
-	}
 
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
@@ -343,86 +562,48 @@ void Motion(int x, int y) {
 	float my = (800 / 2.0f - y) / (800 / 2.0f);
 
 	if (left_button == true) {
-
-		rect[target].x = mx;
-		rect[target].y = my;
-
-		std::cout << "rect[:" << target << "].x =" << rect[target].x << '\n';
-		std::cout << "rect[:" << target << "].y =" << rect[target].y << '\n' << '\n';
-
 	}
-
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
 
-
 int b_keyboard{};
-void TimerA(int value) {
-	const int y{ 16 };
-	const int mouse{ 1 };
 
-	if (rect[value].time > 1.0) {
-	
-		rect[value].time = 0.0;
+void timer(int value) {
+	static int count{};//폴리곤 나오는 시간
+	count = ++count % 200; //2초
+
+	if (!count) {
+		Object new_p;
+		new_p.mesh.set_polygon(randomnum(3, 8));//메쉬초기화 
+		new_p.mesh.send_gpu();
+		new_p.translate = {(randomnum(-1, 1) > 0) ? -1 : 1, 0.0f, 1.0f};
+		if (new_p.translate.x > 0) {
+			new_p.start_x = true;
+		}
+		else {
+			new_p.start_x = false;
+		}
+		new_p.scale = {0.2f,0.2f,0.2f};
+		new_p.y_speed = 0.05f;
+		slice_polygon.push_back(move(new_p));
 	}
-	else {
-		rect[value].time += 0.01f;
+
+	for (Object& o : slice_polygon) { //래퍼런스는 메모리를 할당 x
+		o.translate.y += o.y_speed;
+		o.y_speed -= 0.005f;
+		o.y_speed = glm::clamp(o.y_speed, -0.5f, 0.5f);
+		if (o.start_x) {
+			o.translate.x -= 0.05f;
+		}
+		else {
+			o.translate.x += 0.05f;
+		}
 	}
-	InitBuffer(rect[value]);
 
 	glutPostRedisplay();
-	if (rect[value].pointnum < 6)
-		glutTimerFunc(10, TimerA, value);
+	glutTimerFunc(10, timer, value);
 }
-void TimerB(int value) {
 
-	if (rect[value].motions == 1) {
-		if (value != target) {
-			rect[value].x += rect[value].dx * 0.01f;
-			rect[value].y += rect[value].dy * 0.01f;
-			//std::cout << "timer[" << value << "]: (" << rect[value].dx << ", " << rect[value].x << ")" << std::endl;
-
-			if ((rect[value].dx < 0 and rect[value].x - rect[value].size <= -1) || (rect[value].dx > 0 and rect[value].x + rect[value].size >= 1)) {
-				rect[value].dx *= -1;
-				rect[value].x += rect[value].dx * 0.01f;
-			}
-			if ((rect[value].dy < 0 and rect[value].y - rect[value].size <= -1) || (rect[value].dy > 0 and rect[value].y + rect[value].size >= 1)) {
-				rect[value].dy *= -1;
-				rect[value].y += rect[value].dy * 0.01f;
-			}
-			//std::cout << rect[i].x << '\n';
-			InitBuffer(rect[value]);
-		}
-	}
-	else {
-		if (rect[value].down == 1) {			// 수직 이동
-			rect[value].y += rect[value].dy * 0.01f; //방향 전환
-			rect[value].chy += 0.01f;
-
-			if (rect[value].chy > rect[value].size * 2) {
-
-				rect[value].down = 0;
-			}
-
-			else if (rect[value].chy > rect[value].size * 2 || (rect[value].dy < 0 && rect[value].y - rect[value].size <= -1) || (rect[value].dy > 0 && rect[value].y + rect[value].size >= 1)) {
-				rect[value].dy *= -1;
-			}
-		}
-		else { // 수평 이동
-			rect[value].x += rect[value].dx * 0.01f;
-
-			if ((rect[value].dx < 0 && rect[value].x - rect[value].size <= -1) || (rect[value].dx > 0 && rect[value].x + rect[value].size >= 1)) {
-				rect[value].dx *= -1;
-				rect[value].chy = 0.0f;
-				rect[value].down = 1;
-			}
-		}
-
-
-	}
-	glutPostRedisplay();
-	glutTimerFunc(10, TimerB, value);
-}
 void basket_timer(int value) {
 	basket.x += basket.dx * 0.01f;
 	//std::cout << "timer[" << value << "]: (" << rect[value].dx << ", " << rect[value].x << ")" << std::endl;
@@ -441,83 +622,11 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case 'q':case 'Q':
 		exit(0);
 		break;
-	//선
-	case 'l': case 'L':
-		for (int i = 0; i < 4; ++i) {
-			rect[i].pointnum = 2;
-			InitBuffer(rect[i]);
-		}
-		break;
-	//삼각형
-	case 't':case 'T':
-		for (int i = 0; i < 4; ++i) {
-			rect[i].pointnum = 3;
-			InitBuffer(rect[i]);
-		}
-		break;
-	// 사각형
-	case 'r':case 'R':
-		for (int i = 0; i < 4; ++i) {
-			rect[i].pointnum = 4;
-			InitBuffer(rect[i]);
-		}
-		break;
-	//오각형
-	case 'p':case 'P':
-		for (int i = 0; i < 4; ++i) {
-			rect[i].pointnum = 5;
-			InitBuffer(rect[i]);
-		}
-		break;
-	// 다시
-	case 'a':case 'A':
-		for (int i = 0; i < 4; ++i) {
-			rect[i].pointnum = i+ 2;
-			InitBuffer(rect[i]);
-		}
-		break;
-
-	
-	
-		break;
 	}
 	glutPostRedisplay(); // 화면 다시 그리기 요청
 }
 
 void reset() {
-	n = 0;
-	basket.x = 0.0f;
-	basket.y = -0.5f;
-	basket.dx = randomnum(0.0f, 1.0f) < 0.5f ? 1 : -1;
-	basket.down = 0;   // y가 변하는가
-	basket.size = 0.2f;
-	basket.pointnum = 2;
-	basket.color.push_back(0.0f);		//r
-	basket.color.push_back(0.0f);		//g
-	basket.color.push_back(1.0f);		//b
-	//InitBuffer(basket);
-	for (shape& r : rect) {
-
-		r.x = randomnum(-1.0f, 1.0f);
-		r.y = randomnum(-1.0f, 1.0f);
-		r.dx = randomnum(0.0f, 1.0f) < 0.5f ? 1 : -1;
-		r.dy = randomnum(0.0f, 1.0f) < 0.5f ? 1 : -1;
-
-		r.motions = randomnum(0.0f, 1.0f) < 0.5f ? 1 : 2;
-		r.chy = 1.0f; // 변화량 기록
-		r.down = 0;   // y가 변하는가
-
-		r.time = 0.0f;
-		r.pointnum = n++ / 3 + 1;
-		r.size = 0.2f;
-
-		for (int j = 0; j < 7; j++) {
-			r.color.push_back(randomnum(0.0f, 1.0f));		//r
-			r.color.push_back(randomnum(0.0f, 1.0f));		//g
-			r.color.push_back(randomnum(0.0f, 1.0f));		//b
-		}
-		InitBuffer(r);
-	}
 
 }
 
@@ -528,57 +637,19 @@ GLvoid drawScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 	glUseProgram(shaderProgramID);						//--- 렌더링 파이프라인에 세이더 불러오기
 
-	glBindVertexArray(basket.vao);								//--- 사용할 VAO 불러오기
-	{
+	for(Object& o : slice_polygon){
+
+		// 1. object 의 월드 변환을  shader에 입력(uniform 변수)
 		glm::mat4 transformMatrix(1.0f);
-		transformMatrix = glm::translate(transformMatrix, glm::vec3(basket.x, basket.y, 0.0f));
+		o.set_world_transform(transformMatrix);
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
-
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));
+		// 2. object 가 가진 모양(Mesh)에게 출력 요청
+		o.mesh.draw();
 	}
-	glLineWidth(5);
-	glDrawElements(GL_LINES, basket.indexnum, GL_UNSIGNED_INT, 0);
-
-
-	dddddddddddddddddddddd();
 
 	glutSwapBuffers();									//--- 화면에 출력하기
 }
-
-void dddddddddddddddddddddd()
-{
-	for (int i = 0; i < n; ++i) {
-
-		glBindVertexArray(rect[i].vao);								//--- 사용할 VAO 불러오기
-		{
-			glm::mat4 transformMatrix(1.0f);
-			transformMatrix = glm::translate(transformMatrix, glm::vec3(rect[i].x, rect[i].y, 0.0f));
-			unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "modelTransform");	//--- 버텍스 세이더에서 모델링 변환 위치 가져오기
-			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transformMatrix));		//--- modelTransform 변수에 변환 값 적용하기
-
-		}
-
-
-		if (choice == 0) {
-			if (rect[i].pointnum == 1) {
-				glPointSize(5);
-				glDrawElements(GL_POINTS, rect[i].indexnum, GL_UNSIGNED_INT, 0);
-			}
-			else if (rect[i].pointnum == 2) {
-				glLineWidth(5);
-				glDrawElements(GL_LINES, rect[i].indexnum, GL_UNSIGNED_INT, 0);
-
-			}
-			else
-				glDrawElements(GL_TRIANGLES, rect[i].indexnum, GL_UNSIGNED_INT, 0);
-		}
-		else {
-			glLineWidth(5);
-			glDrawArrays(GL_LINE_LOOP, 0, rect[i].pointnum + 1);
-		}
-	}
-}
-
 
 //--- 다시그리기 콜백 함수
 GLvoid Reshape(int w, int h)

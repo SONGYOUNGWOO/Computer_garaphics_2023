@@ -15,9 +15,10 @@
 #include <gl/glm/gtc/matrix_transform.hpp>
 using namespace std;
 
+const glm::vec3 z_axis{ 0.0f,0.0f,1.0f }; //zรเ
+
 void reset();
-void TimerA(int value);
-void TimerB(int value);
+void timer(int value);
 
 GLvoid drawScene();
 void dddddddddddddddddddddd();
